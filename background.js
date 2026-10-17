@@ -7,7 +7,7 @@ import { loadDb, saveDb } from './lib/store.js';
 import * as S from './lib/state.js';
 import * as T from './lib/tasks.js';
 import { cashIn, todayKey } from './lib/db.js';
-import { buildRules, checkUrl, blockedUrl } from './lib/rules.js';
+import { buildRules, checkUrl, blockedUrl, sweepAction } from './lib/rules.js';
 import { fetchRecent } from './lib/codeforces.js';
 import { proposeSettings } from './lib/settings.js';
 import { isExemptUrl } from './lib/urls.js';
@@ -83,17 +83,15 @@ async function syncRules(db, now) {
   await sweepTabs(db, now).catch((err) => log('tab sweep failed', err));
 }
 
-// Rules only catch new page loads. Tabs that were already open on a now-blocked site get sent
-// to the blocked page, which puts them back by itself once they're allowed again.
-// Audible tabs are spared from session blocks so music keeps playing; reward blocks still apply.
+// Runs whenever the rules change. Rules only catch new page loads, so tabs already open on a
+// now-blocked site get parked on the blocked page, and parked tabs whose site is allowed again
+// get put back, including frozen or discarded background tabs. See sweepAction() in rules.js.
 async function sweepTabs(db, now) {
   const study = db.runtime.active?.tabId;
   for (const tab of await chrome.tabs.query({})) {
-    const url = tab.url || '';
-    if (!/^https?:/.test(url) || tab.id === study) continue;
-    const reason = checkUrl(db, url, now);
-    if (!reason || (reason === 'session' && tab.audible)) continue;
-    chrome.tabs.update(tab.id, { url: blockedUrl(BLOCKED, reason, url) }).catch(() => {});
+    const action = sweepAction(db, tab.url || tab.pendingUrl || '', now, BLOCKED, { audible: tab.audible });
+    if (!action || (action.block && tab.id === study)) continue;
+    chrome.tabs.update(tab.id, { url: action.block || action.restore }).catch(() => {});
   }
 }
 
