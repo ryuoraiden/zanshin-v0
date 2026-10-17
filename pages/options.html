@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zanshin options</title>
+    <link rel="icon" href="../icons/icon32.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        padding: 22px 16px 80px;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      header {
+        margin-bottom: 18px;
+      }
+      section.card {
+        margin-top: 16px;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .fields .wide {
+        grid-column: span 2;
+      }
+      .help {
+        font-size: 12px;
+        color: var(--faint);
+        font-weight: 400;
+      }
+      textarea {
+        min-height: 92px;
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .check {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px !important;
+        color: var(--text) !important;
+        font-size: 14px !important;
+      }
+      .savebar {
+        position: sticky;
+        bottom: 0;
+        margin-top: 16px;
+        padding: 12px 0;
+        background: linear-gradient(transparent, var(--bg) 30%);
+      }
+      @media (max-width: 640px) {
+        .fields {
+          grid-template-columns: 1fr;
+        }
+        .fields .wide {
+          grid-column: span 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="row spread">
+        <div class="brand">
+          <img src="../icons/icon32.png" alt="" />
+          <span class="kanji">残心</span>
+          <span class="word">Options</span>
+        </div>
+        <button class="btn ghost sm" id="dash" type="button">Dashboard</button>
+      </header>
+
+      <div id="lock-state"></div>
+
+      <form id="settings" autocomplete="off">
+        <section class="card">
+          <h3>Daily quota</h3>
+          <div class="fields">
+            <label class="field">Focused minutes per day
+              <input type="number" name="quotaMin" min="0" max="1440" step="10" />
+              <span class="help">Reward sites stay blocked until you hit this.</span>
+            </label>
+            <label class="field">Reward window (minutes)
+              <input type="number" name="rewardMin" min="0" max="600" step="5" />
+              <span class="help">How long reward sites open after you cash in. Once a day.</span>
+            </label>
+            <label class="field wide">Reward sites (one per line)
+              <textarea name="rewardDomains" spellcheck="false"></textarea>
+              <span class="help">Blocked all day until you cash in. Paths work too, like youtube.com/shorts.</span>
+            </label>
+            <label class="field">Day starts at
+              <input type="time" name="dayStartsAt" />
+              <span class="help">Late-night sessions count toward the day you're still in.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Allowed sites during a session</h3>
+          <div class="fields">
+            <label class="field">IITM
+              <textarea name="cat-IITM" spellcheck="false"></textarea>
+            </label>
+            <label class="field">DSA
+              <textarea name="cat-DSA" spellcheck="false"></textarea>
+            </label>
+            <label class="field">NITC
+              <textarea name="cat-NITC" spellcheck="false" placeholder="your course sites"></textarea>
+            </label>
+            <label class="field">Cyber
+              <textarea name="cat-Cyber" spellcheck="false"></textarea>
+            </label>
+            <label class="field wide">Always allowed
+              <textarea name="alwaysAllowed" spellcheck="false"></textarea>
+              <span class="help">Sign-in pages and localhost, so logins and your dev servers keep working.</span>
+            </label>
+          </div>
+          <p class="help" style="margin-bottom: 0">
+            The task's own URL is always allowed. Subdomains are included, so iitm.ac.in covers every IITM site.
+          </p>
+        </section>
+
+        <section class="card">
+          <h3>Lecture lock and safety</h3>
+          <div class="fields">
+            <label class="field check wide">
+              <input type="checkbox" name="pauseOnBlur" /> Pause the lecture when its window loses focus
+            </label>
+            <label class="field">Hard cap per session (minutes)
+              <input type="number" name="hardCapMin" min="30" max="720" step="10" />
+              <span class="help">Any session ends on its own after this, no matter what.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Integrations</h3>
+          <div class="fields">
+            <label class="field">Codeforces handle
+              <input type="text" name="cfHandle" placeholder="tourist" spellcheck="false" />
+              <span class="help">Used to detect accepted submissions.</span>
+            </label>
+            <label class="field">Discord webhook (optional)
+              <input type="password" name="discordWebhook" placeholder="https://discord.com/api/webhooks/..." spellcheck="false" />
+              <span class="help">Posts one line on completions, abandons, gaps and tamper.</span>
+            </label>
+          </div>
+          <div class="row" style="margin-top: 12px">
+            <button class="btn ghost sm" type="button" id="discord-test">Send a test message</button>
+          </div>
+        </section>
+
+        <div class="savebar row">
+          <button class="btn primary" type="submit">Save</button>
+          <span class="small faint" id="save-note"></span>
+        </div>
+      </form>
+
+      <section class="card">
+        <h3>Escape hatches, on purpose</h3>
+        <ul class="small muted" style="margin: 0; padding-left: 18px; line-height: 1.7">
+          <li>Emergency exit: 60 s wait, logged as abandoned.</li>
+          <li>Disabling Zanshin in chrome://extensions always ends all blocking (logged as a gap when it comes back).</li>
+          <li>Incognito is a hole unless "Allow in Incognito" is on for Zanshin.</li>
+          <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens the dashboard, even from a locked lecture.
+            <button class="btn link" type="button" id="shortcuts">Change shortcut</button></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h3>Data</h3>
+        <p class="small muted" style="margin-top: 0">Everything lives in this browser. Removing the extension deletes it, so export now and then.</p>
+        <button class="btn ghost sm" type="button" id="export">Export JSON</button>
+      </section>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zanshin</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        width: 360px;
+        padding: 14px;
+      }
+      header {
+        margin-bottom: 12px;
+      }
+      .quota {
+        margin-bottom: 12px;
+      }
+      .quota .row {
+        margin-bottom: 6px;
+      }
+      .next h3 {
+        margin-top: 2px;
+      }
+      .next li .row.spread {
+        align-items: flex-start;
+      }
+      footer {
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="row spread">
+      <div class="brand">
+        <img src="../icons/icon32.png" alt="" />
+        <span class="kanji">残心</span>
+        <span class="word">Zanshin</span>
+      </div>
+      <div class="row">
+        <button class="btn ghost sm" id="dash" type="button">Dashboard</button>
+        <button class="btn ghost sm" id="opts" type="button" title="Options">Options</button>
+      </div>
+    </header>
+    <section class="quota" id="quota"></section>
+    <main id="main"></main>
+    <footer id="footer"></footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

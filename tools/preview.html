@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zanshin preview</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body {
+        padding: 28px;
+        max-width: 720px;
+      }
+      li {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 style="margin-bottom: 8px">Zanshin preview harness</h1>
+    <p class="muted">Dev only. Pages run against a fake chrome API with demo data. Links reset the data.</p>
+    <ul>
+      <li><a href="/pages/dashboard.html?demo=idle">Dashboard, idle</a></li>
+      <li><a href="/pages/dashboard.html?demo=manual">Dashboard, manual session running</a></li>
+      <li><a href="/pages/dashboard.html?demo=video">Dashboard, lecture running</a></li>
+      <li><a href="/pages/dashboard.html?demo=exit">Dashboard, exit requested</a></li>
+      <li><a href="/pages/dashboard.html?demo=empty">Dashboard, empty</a></li>
+      <li><a href="/pages/popup.html?demo=idle">Popup, idle</a></li>
+      <li><a href="/pages/popup.html?demo=manual">Popup, manual session</a></li>
+      <li><a href="/pages/popup.html?demo=video">Popup, lecture</a></li>
+      <li><a href="/pages/blocked.html?demo=manual&r=session#https://www.reddit.com/r/all">Blocked, session</a></li>
+      <li><a href="/pages/blocked.html?demo=idle&r=reward#https://www.netflix.com/browse">Blocked, reward</a></li>
+      <li><a href="/pages/recall.html?demo=recall">Recall note</a></li>
+      <li><a href="/pages/options.html?demo=setup">Options, setup mode</a></li>
+      <li><a href="/pages/options.html?demo=idle">Options, locked</a></li>
+    </ul>
+  </body>
+</html>

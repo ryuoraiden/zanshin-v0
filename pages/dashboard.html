@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zanshin</title>
+    <link rel="icon" href="../icons/icon32.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        padding: 22px 28px 60px;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+      header.top {
+        margin-bottom: 20px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr 1fr 1.3fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .stat .label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .stat .value {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 2px 0 8px;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat .value small {
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .col > * + * {
+        margin-top: 16px;
+      }
+      form .fields {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+      }
+      form .span-6 {
+        grid-column: span 6;
+      }
+      form .span-4 {
+        grid-column: span 4;
+      }
+      form .span-3 {
+        grid-column: span 3;
+      }
+      form .span-2 {
+        grid-column: span 2;
+      }
+      .check {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px !important;
+        color: var(--text) !important;
+        font-size: 13px !important;
+        padding-top: 22px;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--faint);
+        margin-top: 8px;
+      }
+      .task-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+        align-items: flex-start;
+      }
+      .queue li .row.spread {
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .queue li.pinned .item-title::before {
+        content: '';
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-right: 8px;
+        vertical-align: 2px;
+      }
+      .cat-row {
+        display: grid;
+        grid-template-columns: 70px 1fr 64px;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .week {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .week td,
+      .week th {
+        padding: 6px 4px;
+        text-align: left;
+        border-top: 1px solid var(--border);
+      }
+      .week th {
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 12px;
+        border-top: 0;
+      }
+      .week td.num,
+      .week th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        width: 1%;
+        padding-left: 10px;
+      }
+      .week .bar {
+        height: 8px;
+      }
+      .week tr.today td:first-child {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      details summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .events {
+        font-size: 12px;
+        color: var(--faint);
+        margin-top: 4px;
+      }
+      @media (max-width: 900px) {
+        .grid,
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        body {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top row spread">
+        <div class="brand">
+          <img src="../icons/icon32.png" alt="" />
+          <span class="kanji">残心</span>
+          <span class="word">Zanshin</span>
+        </div>
+        <div class="row">
+          <span class="small faint"><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens this page</span>
+          <button class="btn ghost sm" id="opts" type="button">Options</button>
+        </div>
+      </header>
+      <div id="setup"></div>
+      <section class="stats" id="stats"></section>
+      <div class="grid">
+        <div class="col" id="left">
+          <div id="session"></div>
+          <section class="card queue">
+            <div class="row spread" style="margin-bottom: 10px">
+              <h3 style="margin: 0">Queue</h3>
+              <span class="small faint" id="queue-count"></span>
+            </div>
+            <ul class="list" id="queue"></ul>
+          </section>
+          <section class="card">
+            <h3 id="form-title">Add a task</h3>
+            <form id="task-form" autocomplete="off">
+              <div class="fields">
+                <label class="field span-6">Title
+                  <input type="text" name="title" placeholder="MLT Week 3, Lecture 2" required maxlength="200" />
+                </label>
+                <label class="field span-2">Category
+                  <select name="category">
+                    <option>IITM</option>
+                    <option>DSA</option>
+                    <option>NITC</option>
+                    <option>Cyber</option>
+                  </select>
+                </label>
+                <label class="field span-2">Type
+                  <select name="type">
+                    <option value="video">Lecture (video)</option>
+                    <option value="codeforces">Codeforces</option>
+                    <option value="manual" selected>Manual</option>
+                  </select>
+                </label>
+                <label class="field span-2">Estimate (min)
+                  <input type="number" name="estimateMin" min="0" max="600" step="5" placeholder="45" />
+                </label>
+                <label class="field span-4">URL
+                  <input type="text" name="url" placeholder="https://www.youtube.com/watch?v=..." />
+                </label>
+                <label class="field span-2" id="cf-field">Codeforces problem
+                  <input type="text" name="cfProblem" placeholder="580A" />
+                </label>
+                <label class="field span-3">Deadline
+                  <input type="datetime-local" name="deadline" />
+                </label>
+                <label class="field check span-3">
+                  <input type="checkbox" name="hardDeadline" /> Hard deadline (graded, can't slip)
+                </label>
+                <label class="field span-6">Extra allowed sites for this task
+                  <input type="text" name="extraDomains" placeholder="cp-algorithms.com, docs.python.org" />
+                </label>
+              </div>
+              <div class="hint" id="type-hint"></div>
+              <div class="row" style="margin-top: 14px">
+                <button class="btn primary" type="submit" id="submit">Add task</button>
+                <button class="btn ghost hidden" type="button" id="cancel-edit">Cancel</button>
+              </div>
+            </form>
+          </section>
+        </div>
+        <div class="col" id="right"></div>
+      </div>
+    </div>
+    <script type="module" src="dashboard.js"></script>
+  </body>
+</html>

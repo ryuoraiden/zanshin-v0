@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zanshin</title>
+    <link rel="icon" href="../icons/icon32.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+      }
+      .panel {
+        width: min(520px, 100%);
+      }
+      .enso {
+        width: 72px;
+        height: 72px;
+        display: block;
+        margin-bottom: 22px;
+        opacity: 0.9;
+      }
+      h1 {
+        font-size: 26px;
+        margin-bottom: 10px;
+      }
+      p.lead {
+        color: var(--muted);
+        font-size: 15px;
+        margin: 0 0 20px;
+        overflow-wrap: anywhere;
+      }
+      p.lead strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0 14px;
+      }
+      .meter {
+        margin: 16px 0 6px;
+      }
+      .meter .row {
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel" id="root"></main>
+    <script type="module" src="blocked.js"></script>
+  </body>
+</html>

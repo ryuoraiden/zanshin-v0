@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recall</title>
+    <link rel="icon" href="../icons/icon32.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+      }
+      .panel {
+        width: min(640px, 100%);
+      }
+      .mark {
+        font-family: var(--jp);
+        font-size: 15px;
+        letter-spacing: 0.3em;
+        color: var(--accent);
+        margin-bottom: 18px;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 8px 0 18px;
+        overflow-wrap: anywhere;
+      }
+      .prompt {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+      textarea {
+        min-height: 180px;
+        font-size: 15px;
+      }
+      .foot {
+        margin-top: 12px;
+      }
+      .count.short {
+        color: var(--warn);
+      }
+      .next {
+        margin-top: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel" id="root"></main>
+    <script type="module" src="recall.js"></script>
+  </body>
+</html>

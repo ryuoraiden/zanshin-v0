@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zanshin-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/preview-server.mjs"],
+      "port": 5178
+    }
+  ]
+}
