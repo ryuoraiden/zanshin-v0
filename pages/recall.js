@@ -53,7 +53,7 @@ function formView(s) {
   sync();
   setTimeout(() => area.focus(), 50);
   return [
-    h('div', { class: 'mark' }, '残心'),
+    h('img', { class: 'mark', src: '../icons/brand.png', alt: '残心' }),
     h('div', { class: 'row' }, chip(s.category), h('span', { class: 'badge' }, TYPE_LABEL[s.type]), s.manual ? h('span', { class: 'badge' }, 'done by hand') : null),
     h('h1', {}, s.title),
     h('div', { class: 'prompt' }, p.q),
@@ -84,7 +84,7 @@ function nextUp(db) {
 
 function doneView(db) {
   return [
-    h('div', { class: 'mark' }, '残心'),
+    h('img', { class: 'mark', src: '../icons/brand.png', alt: '残心' }),
     h('h1', {}, finished ? `Done: ${finished.title}` : 'Done'),
     finished ? h('p', { class: 'muted' }, `${fmtHM(finished.creditedMs)} credited.`) : null,
     h('section', { class: 'card next' }, h('h3', {}, 'Next up'), nextUp(db)),
@@ -103,7 +103,7 @@ async function show(want) {
   else if (want === 'done') root.replaceChildren(...doneView(db));
   else
     root.replaceChildren(
-      h('div', { class: 'mark' }, '残心'),
+      h('img', { class: 'mark', src: '../icons/brand.png', alt: '残心' }),
       h('h1', {}, 'Nothing to write right now'),
       h('p', { class: 'muted' }, 'The recall note appears here when a task is finished.'),
       btn('Open dashboard', 'ghost', () => send('controls:open')),

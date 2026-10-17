@@ -101,7 +101,7 @@ async function updateBadge(db, now) {
   if (s) text = s.phase === 'recall' ? 'note' : s.phase === 'paused' ? '||' : `${Math.floor(liveCreditMs(s, now) / 60000)}m`;
   try {
     await chrome.action.setBadgeText({ text });
-    await chrome.action.setBadgeBackgroundColor({ color: s?.phase === 'paused' ? '#5c6370' : '#c8432f' });
+    await chrome.action.setBadgeBackgroundColor({ color: s?.phase === 'paused' ? '#5c6370' : '#202124' });
   } catch {}
 }
 

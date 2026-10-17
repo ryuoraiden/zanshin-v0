@@ -10,7 +10,7 @@ v0: an agent-built tool, not the hand-written v1. See [PLAN.md](PLAN.md) for the
 1. Open `chrome://extensions` and switch on **Developer mode** (top right).
 2. **Load unpacked** and pick this folder (`D:\Projects\Zanshin`).
 3. On the Zanshin card: **Details**, then switch on **Allow in Incognito**. Without this, incognito is a free escape.
-4. Pin the ensō icon to the toolbar.
+4. Pin the 残 icon to the toolbar.
 5. The Options page opens by itself. You start in **setup mode**: settings apply instantly and cash-ins don't count. Set your Codeforces handle and NITC course sites, run the checklist below, then press **Lock settings**.
 
 After editing any file, hit the reload arrow on the Zanshin card in `chrome://extensions`.

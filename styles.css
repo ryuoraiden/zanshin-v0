@@ -82,19 +82,15 @@ h3 {
   align-items: center;
   gap: 10px;
 }
-.brand img {
-  width: 26px;
-  height: 26px;
-}
-.brand .kanji {
-  font-family: var(--jp);
-  font-size: 20px;
-  letter-spacing: 0.04em;
+.brand .logo {
+  width: 40px;
+  height: 40px;
 }
 .brand .word {
   font-weight: 600;
+  font-size: 15px;
   letter-spacing: 0.02em;
-  color: var(--muted);
+  color: var(--text);
 }
 
 /* layout */

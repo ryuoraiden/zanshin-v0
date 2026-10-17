@@ -24,8 +24,8 @@ function restore() {
   return true;
 }
 
-function enso() {
-  return h('img', { class: 'enso', src: '../icons/icon128.png', alt: '' });
+function logo() {
+  return h('img', { class: 'logo', src: '../icons/brand.png', alt: '残心' });
 }
 
 function sessionView(db, now) {
@@ -46,7 +46,7 @@ function sessionView(db, now) {
   }, 1000);
 
   return [
-    enso(),
+    logo(),
     h('h1', {}, 'Not part of this session'),
     h('p', { class: 'lead' }, h('strong', {}, host), " isn't on the list for ", h('strong', {}, s.title), '.'),
     h('div', { class: 'small muted' }, `${fmtHM(liveCreditMs(s, now))} credited so far, started ${fmtTime(s.startedAt)}.`),
@@ -71,7 +71,7 @@ function rewardView(db, now) {
   else if (q.usedToday) foot = h('p', { class: 'muted' }, "Today's reward window is used up. It resets at the start of tomorrow.");
   else foot = h('p', { class: 'muted' }, `${Math.ceil((q.quotaMs - q.doneMs) / 60000)} more minutes of focused work and it opens.`);
   return [
-    enso(),
+    logo(),
     h('h1', {}, "Locked until you've earned it"),
     h('p', { class: 'lead' }, h('strong', {}, host), " opens after today's quota."),
     h(
@@ -93,7 +93,7 @@ async function render() {
     if (original && restore()) return;
     shownReason = null;
     root.replaceChildren(
-      enso(),
+      logo(),
       h('h1', {}, 'Allowed again'),
       h('p', { class: 'lead' }, 'This page is no longer blocked.'),
       original ? h('div', { class: 'actions' }, btn(`Open ${host}`, 'primary', () => location.replace(original))) : null,
