@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRules, checkUrl, sessionAllowList, pathRegex } from '../lib/rules.js';
-import { startSession, allowDomain } from '../lib/state.js';
+import { buildRules, checkUrl, sessionAllowList, pathRegex, sweepAction } from '../lib/rules.js';
+import { startSession, allowDomain, markDone, completeWithNote } from '../lib/state.js';
 import { freshDb, withTask, T0 } from './helpers.js';
 
 const BASE = 'chrome-extension://abc/pages/blocked.html';
@@ -68,4 +68,36 @@ test('checkUrl mirrors the rules', () => {
   db.runtime.rewardUntil = T0 + 1;
   db.runtime.active = null;
   assert.equal(checkUrl(db, 'https://www.reddit.com/', T0), null);
+});
+
+test('sweep: blocked tabs go back to their site once the session ends', () => {
+  const db = freshDb();
+  const task = withTask(db, { category: 'DSA' });
+  startSession(db, task.id, T0, 's');
+  const wiki = 'https://en.wikipedia.org/wiki/Binary_search';
+  assert.deepEqual(sweepAction(db, wiki, T0, BASE), { block: `${BASE}?r=session#${wiki}` });
+  const parked = `${BASE}?r=session#${wiki}`;
+  assert.equal(sweepAction(db, parked, T0, BASE), null, 'still blocked mid-session');
+  markDone(db, T0 + 1000);
+  completeWithNote(db, 'binary search on the answer', T0 + 2000);
+  assert.deepEqual(sweepAction(db, parked, T0 + 3000, BASE), { restore: wiki });
+});
+
+test('sweep: reward tabs stay parked until the reward window opens', () => {
+  const db = freshDb();
+  const netflix = 'https://www.netflix.com/browse';
+  const parked = `${BASE}?r=reward#${netflix}`;
+  assert.equal(sweepAction(db, parked, T0, BASE), null);
+  db.runtime.rewardUntil = T0 + 60_000;
+  assert.deepEqual(sweepAction(db, parked, T0, BASE), { restore: netflix });
+});
+
+test('sweep: audible tabs keep playing through session blocks, not reward blocks', () => {
+  const db = freshDb();
+  const task = withTask(db, { category: 'DSA' });
+  startSession(db, task.id, T0, 's');
+  assert.equal(sweepAction(db, 'https://music.youtube.com/watch?v=1', T0, BASE, { audible: true }), null);
+  assert.ok(sweepAction(db, 'https://www.netflix.com/watch/1', T0, BASE, { audible: true }).block);
+  assert.equal(sweepAction(db, 'chrome://settings', T0, BASE), null);
+  assert.equal(sweepAction(db, `${BASE}?r=session`, T0, BASE), null, 'no original url, leave it');
 });

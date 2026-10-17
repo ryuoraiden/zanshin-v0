@@ -1,6 +1,7 @@
 # Zanshin 残心
 
 A Chrome extension that holds you on one task until it's actually done. Finishing the task unlocks the next one. A timer running out doesn't.
+In karate, zanshin is the awareness you keep after the technique lands. Here that is the last step of every session: a short written recall before the task counts as done.
 
 v0: an agent-built tool, not the hand-written v1. See [PLAN.md](PLAN.md) for the full spec and roadmap.
 
@@ -16,11 +17,11 @@ After editing any file, hit the reload arrow on the Zanshin card in `chrome://ex
 
 ## How it works
 
-| Task type | Completes when | Credit counts |
-|---|---|---|
-| Lecture (video) | 90% of the video has actually played (skipping ahead and ads don't count), then a 150-char recall note | Real seconds while it plays and its window is focused |
-| Codeforces | An accepted submission for that problem, made after you pressed Start (checked every minute), then a one-line note | Wall time minus pauses |
-| Manual | You press Done and write what you finished | Wall time minus pauses |
+| Task type       | Completes when                                                                                                     | Credit counts                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Lecture (video) | 90% of the video has actually played (skipping ahead and ads don't count), then a 150-char recall note             | Real seconds while it plays and its window is focused |
+| Codeforces      | An accepted submission for that problem, made after you pressed Start (checked every minute), then a one-line note | Wall time minus pauses                                |
+| Manual          | You press Done and write what you finished                                                                         | Wall time minus pauses                                |
 
 - **During any session** every site outside the task's allowlist goes to a blocked page. "Allow for this session" unlocks after 10 s and is logged. Tabs already open on blocked sites get swept too, except tabs playing audio.
 - **Lectures** open in a fullscreen popup window with no tabs and no address bar. YouTube is stripped down to the player. F11 gets undone, new tabs get closed, focus bounces back, and the video pauses when you Alt+Tab.
