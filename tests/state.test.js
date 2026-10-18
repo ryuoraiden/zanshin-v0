@@ -14,7 +14,16 @@ function started(input = {}, settings = {}) {
   return { db, task, s: db.runtime.active };
 }
 
-test('start opens the task and refuses a second session', () => {
+test('only lectures open something on start', () => {
+  const manual = freshDb();
+  const m = withTask(manual, { url: 'https://codeforces.com/problemset' });
+  assert.deepEqual(S.startSession(manual, m.id, T0, 's').effects, []);
+  const lecture = freshDb();
+  const v = withTask(lecture, { type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
+  assert.deepEqual(S.startSession(lecture, v.id, T0, 's').effects, [{ kind: 'openTask' }]);
+});
+
+test('start refuses a second session', () => {
   const { db, task } = started();
   assert.equal(db.runtime.active.phase, 'active');
   const again = S.startSession(db, task.id, T0, 's2');
@@ -123,16 +132,39 @@ test('video: dragging to the end does not complete', () => {
   assert.equal(s.phase, 'active');
 });
 
-test('video: 90% actually played completes into recall, with a 150 char note', () => {
+test('video: 90% played does not cut the lecture off; the end of the video finishes it', () => {
   const { db } = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
   const s = db.runtime.active;
   for (let t = 0; t < 540; t += 5) {
     S.videoProgress(db, { videoId: 'abcdefghijk', duration: 600, intervals: [[t, t + 5]], currentTime: t + 5, playedMs: 2500 }, T0);
   }
+  assert.equal(s.watchedEnough, true);
+  assert.equal(s.phase, 'active', 'still playing the last 10%');
+  const r = S.videoProgress(db, { videoId: 'abcdefghijk', duration: 600, intervals: [[540, 600]], currentTime: 600, ended: true, playedMs: 30000 }, T0);
+  assert.deepEqual(r.effects, [{ kind: 'openRecall' }]);
   assert.equal(s.phase, 'recall');
   assert.equal(S.completeWithNote(db, 'too short', T0 + MIN).ok, false);
   assert.equal(S.completeWithNote(db, long, T0 + MIN).ok, true);
-  assert.equal(db.sessions.at(-1).coverage, 0.9);
+  assert.equal(db.sessions.at(-1).coverage, 1);
+  assert.equal(db.sessions.at(-1).manual, false);
+});
+
+test('video: reaching the end without 90% played does not finish it', () => {
+  const { db } = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
+  S.videoProgress(db, { videoId: 'abcdefghijk', duration: 600, intervals: [[0, 60]], currentTime: 60, playedMs: 60000 }, T0);
+  S.videoProgress(db, { videoId: 'abcdefghijk', duration: 600, intervals: [[590, 600]], currentTime: 600, ended: true, playedMs: 10000 }, T0);
+  assert.equal(db.runtime.active.phase, 'active');
+});
+
+test('video: Done after 90% is not "by hand", Done before it is', () => {
+  const a = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
+  S.videoProgress(a.db, { videoId: 'abcdefghijk', duration: 100, intervals: [[0, 92]], currentTime: 92, playedMs: 92000 }, T0);
+  S.markDone(a.db, T0 + MIN);
+  assert.equal(a.db.runtime.active.manual, false);
+  const b = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
+  S.videoProgress(b.db, { videoId: 'abcdefghijk', duration: 100, intervals: [[0, 50]], currentTime: 50, playedMs: 50000 }, T0);
+  S.markDone(b.db, T0 + MIN);
+  assert.equal(b.db.runtime.active.manual, true);
 });
 
 test('video: other videos are ignored and unfocused playback earns no credit', () => {

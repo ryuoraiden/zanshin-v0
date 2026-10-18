@@ -19,12 +19,13 @@ After editing any file, hit the reload arrow on the Zanshin card in `chrome://ex
 
 | Task type       | Completes when                                                                                                     | Credit counts                                         |
 | --------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Lecture (video) | 90% of the video has actually played (skipping ahead and ads don't count), then a 150-char recall note             | Real seconds while it plays and its window is focused |
+| Lecture (video) | At least 90% has actually played (skipping ahead and ads don't count) and the video reaches its end, or you press Done after 90%. Then a 150-char recall note | Real seconds while it plays and its window is focused |
 | Codeforces      | An accepted submission for that problem, made after you pressed Start (checked every minute), then a one-line note | Wall time minus pauses                                |
 | Manual          | You press Done and write what you finished                                                                         | Wall time minus pauses                                |
 
-- **During any session** every site outside the task's allowlist goes to a blocked page. "Allow for this session" unlocks after 10 s and is logged. Tabs already open on blocked sites get swept too, except tabs playing audio.
-- **Lectures** open in a fullscreen popup window with no tabs and no address bar. YouTube is stripped down to the player. F11 gets undone, new tabs get closed, focus bounces back, and the video pauses when you Alt+Tab.
+- **During any session** every site outside the task's allowlist goes to a blocked page. "Allow for this session" unlocks after 10 s and is logged. Tabs already open on blocked sites get swept too, except tabs playing audio. When the session ends they go back to their sites on their own; YouTube tabs come back paused.
+- **Lectures** open in a fullscreen popup window with no tabs and no address bar. YouTube is stripped down to the player. F11 gets undone, new tabs get closed, focus bounces back, and the video pauses when you Alt+Tab. Other task types don't open anything on Start; press **Open task** when you want the link.
+- **Importing from Seek:** on any course page at `seek.onlinedegree.iitm.ac.in`, click **残 Add to Zanshin** (bottom right). Pick a week, untick what you don't want, and add. Lectures and screencasts link straight to YouTube (so the lecture lock and cinema mode work) and take the week's graded deadline as a soft deadline. Graded assignments link to their Seek page with their real due date as a hard deadline. Practice and activity questions are listed but unticked. Anything already in Zanshin, done or not, is skipped, including tasks you added by hand with a Seek or YouTube link. The course prefix ("MAD2") is worked out from the course name and remembered once you edit it. Zanshin reads the outline Seek's own page loads; it never calls Seek's API or touches your login. If the button says it's waiting, reload the Seek page.
 - **Reward sites** (Netflix, Instagram, Reddit, X, Shorts...) stay blocked until you've done your daily quota of focused minutes. Then you can cash in one reward window per day. The day runs 04:00 to 04:00.
 - <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens the dashboard from anywhere, including a locked lecture.
 
@@ -46,7 +47,7 @@ Do these in setup mode, before locking settings.
 4. Start a session, open `chrome://serviceworker-internals`, find Zanshin and press **Stop**. Timer and blocking are still right afterwards.
 5. Start a session, quit Chrome completely, reopen it. The session and its blocking come back.
 6. Add a lecture task with a short YouTube video. Start it. Drag the slider to the end: it does **not** complete.
-7. Same video, play it at 2x from the start: it completes at 90%, the recall note appears in the same window, saving it closes the window.
+7. Same video, play it at 2x from the start: past 90% it keeps playing, and the recall note appears in the same window when the video ends. Saving it closes the window.
 8. During a lecture: F11 comes back to fullscreen. Ctrl+T gets closed. Alt+Tab to another app pauses the video. <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens the dashboard.
 9. Codeforces task on a problem you already solved: no instant completion. A fresh AC completes within about a minute.
 10. Options: quota 1 min, reward 1 min, save. netflix.com is blocked. Do a 1-minute session, cash in, netflix.com opens, then blocks again a minute later. Set the real numbers (300 and 90) and press **Lock settings**.
@@ -67,7 +68,8 @@ Plain JavaScript, no build step, no dependencies.
 ```
 background.js        service worker: chrome events -> lib/ reducers -> effects
 lib/                 pure logic, no chrome.* calls (state machine, rules, credit, queue, settings)
-content/youtube.js   playback coverage, cinema mode, in-page navigation checks
+content/youtube.js   playback coverage, cinema mode, in-page navigation checks, no autoplay in hidden tabs
+content/seek*.js     "Add to Zanshin" on Seek course pages (capture runs in the page, the picker in a shadow root)
 pages/               popup, dashboard, blocked, recall, options
 tests/               node --test, covers lib/
 tools/               icon generator and a dev-only preview harness
@@ -83,4 +85,4 @@ The preview harness renders the pages in a normal tab against a fake `chrome.*` 
 node tools/preview-server.mjs
 ```
 
-Then open http://localhost:5178.
+Then open http://localhost:5178. A mock Seek course page with the test outline is at http://localhost:5178/courses/ns_26t3_cs2006.

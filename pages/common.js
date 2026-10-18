@@ -139,7 +139,8 @@ export function sessionCard(db) {
   if (s.phase === 'recall') {
     actions.append(btn('Write the note', 'primary', () => send('session:done')));
   } else {
-    actions.append(btn(s.type === 'video' ? 'Back to lecture' : 'Open task', 'ghost', () => send('session:focus')));
+    if (s.type === 'video' || s.url)
+      actions.append(btn(s.type === 'video' ? 'Back to lecture' : 'Open task', 'ghost', () => send('session:focus')));
     if (s.type !== 'video')
       actions.append(
         s.phase === 'paused'
@@ -147,7 +148,7 @@ export function sessionCard(db) {
           : btn('Pause', 'ghost', () => send('session:pause')),
       );
     actions.append(
-      s.type === 'manual'
+      s.type === 'manual' || s.watchedEnough
         ? btn('Done', 'primary', () => send('session:done'))
         : confirmBtn('Done by hand', 'Logged as by hand. Sure?', 'ghost', () => send('session:done')),
     );
@@ -201,7 +202,14 @@ export function updateSessionCard(card, db, now) {
     const c = coverage(s.watched, s.duration);
     const el = card.querySelector('[data-live="cov-bar"]');
     if (el) el.style.width = `${Math.round(c * 100)}%`;
-    set('cov', s.duration ? `${Math.round(c * 100)}% watched, 90% completes it` : 'Waiting for the video to start');
+    set(
+      'cov',
+      !s.duration
+        ? 'Waiting for the video to start'
+        : s.watchedEnough
+          ? `${Math.round(c * 100)}% watched. It finishes when the video ends, or press Done.`
+          : `${Math.round(c * 100)}% watched. Past 90%, it finishes at the end of the video.`,
+    );
   }
   const st = exitStatus(s, now);
   const state = st.state === 'stale' ? 'none' : st.state;

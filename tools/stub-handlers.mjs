@@ -63,6 +63,13 @@ export async function handle(msg) {
         db.settings.setupLocked = true;
         return { ok: true, effects: [] };
       });
+    case 'seek:import': {
+      const r = await mutate((db, now) => T.importTasks(db, msg.tasks, now, uid));
+      const { seekPrefixes = {} } = await chrome.storage.local.get('seekPrefixes');
+      seekPrefixes[msg.namespace] = msg.prefix;
+      await chrome.storage.local.set({ seekPrefixes });
+      return r;
+    }
     default:
       return { ok: true };
   }

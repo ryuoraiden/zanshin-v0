@@ -1,0 +1,85 @@
+{
+  "course": {
+    "title": "Sep 2026 - MAD II",
+    "namespace": "ns_26t3_cs2006",
+    "outline": [
+      {
+        "id": 1,
+        "title": "Course Introduction",
+        "availability": "course",
+        "children": [
+          { "id": 2, "type": "L", "title": "About the Course", "video_type": "none", "parent_unit_id": 1 }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Week 1",
+        "availability": "course",
+        "children": [
+          { "id": 19, "type": "L", "title": "1.1 - Introduction", "video": "aaaaaaaaaaa", "video_type": "youtube", "parent_unit_id": 18 },
+          {
+            "id": 34,
+            "type": "A",
+            "title": "Week 1 - Graded Assignment 1",
+            "parent_unit_id": 18,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Sun, 11 Oct 2026 18:29:00 GMT" }
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "title": "Week 2",
+        "availability": "course",
+        "children": [
+          { "id": 37, "type": "L", "title": "2.1 - Introduction to JavaScript Collections", "video": "3fv1ejKqiUU", "video_type": "youtube", "parent_unit_id": 36 },
+          { "id": 38, "type": "L", "title": "Screencast 2.1 - JavaScript - Basic Calculator", "video": "PyT03AgZYpU", "video_type": "youtube", "parent_unit_id": 36 },
+          {
+            "id": 39,
+            "type": "A",
+            "title": "AQ2.1: Activity Questions 1 - Not Graded",
+            "parent_unit_id": 36,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Thu, 31 Dec 2026 18:29:00 GMT" }
+          },
+          { "id": 40, "type": "L", "title": "2.2 - JavaScript Collections - Iterations and Destructuring", "video": "WUehmp1bwaY", "video_type": "youtube", "parent_unit_id": 36 },
+          {
+            "id": 51,
+            "type": "X",
+            "custom_unit_type": "programming",
+            "title": "JavaScript Graded Assignment - Cafe Management",
+            "parent_unit_id": 36,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Sun, 18 Oct 2026 18:29:00 GMT" }
+          },
+          {
+            "id": 52,
+            "type": "A",
+            "title": "Practice Assignment 2 - Not Graded",
+            "parent_unit_id": 36,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Thu, 31 Dec 2026 18:29:00 GMT" }
+          },
+          {
+            "id": 53,
+            "type": "A",
+            "title": "Week 2 - Graded Assignment 2",
+            "parent_unit_id": 36,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Sun, 18 Oct 2026 18:29:00 GMT" }
+          }
+        ]
+      },
+      {
+        "id": 55,
+        "title": "Week 3",
+        "availability": "course",
+        "children": [
+          { "id": 56, "type": "L", "title": "3.1 - Vue Introduction", "video": "bbbbbbbbbbb", "video_type": "youtube", "parent_unit_id": 55 },
+          {
+            "id": 61,
+            "type": "A",
+            "title": "Week 3 - Graded Assignment 3",
+            "parent_unit_id": 55,
+            "workflow": { "student_eval_due_date": null, "submission_due_date": "Sun, 25 Oct 2026 18:29:00 GMT" }
+          }
+        ]
+      }
+    ]
+  }
+}

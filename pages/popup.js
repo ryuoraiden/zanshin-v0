@@ -78,10 +78,7 @@ function renderNext(now) {
                 t.estimateMin ? h('span', { class: 'faint small' }, `${t.estimateMin} min`) : null,
               ),
             ),
-            btn('Start', 'primary sm', async () => {
-              const r = await send('session:start', { taskId: t.id });
-              if (r.ok && t.type !== 'video') window.close();
-            }),
+            btn('Start', 'primary sm', () => send('session:start', { taskId: t.id })),
           ),
         ),
       ),

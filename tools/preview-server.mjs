@@ -22,6 +22,9 @@ createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   let path = decodeURIComponent(url.pathname);
   if (path === '/') path = '/tools/preview.html';
+  // Mock Seek: course pages and the outline API, for checking the "Add to Zanshin" panel.
+  if (path.startsWith('/courses/')) path = '/tools/seek-mock.html';
+  if (path === '/api/v2/user/course/') path = '/tests/fixtures/seek-course.json';
   const file = normalize(join(ROOT, path));
   if (!file.startsWith(ROOT.endsWith(sep) ? ROOT : ROOT + sep)) {
     res.writeHead(403).end();
