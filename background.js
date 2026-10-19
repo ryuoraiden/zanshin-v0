@@ -12,6 +12,7 @@ import { fetchRecent } from './lib/codeforces.js';
 import { proposeSettings } from './lib/settings.js';
 import { isExemptUrl } from './lib/urls.js';
 import { liveCreditMs } from './lib/credit.js';
+import { SEEK_ORIGIN } from './lib/seek.js';
 
 const EXT_BASE = chrome.runtime.getURL('');
 const BLOCKED = chrome.runtime.getURL('pages/blocked.html');
@@ -112,14 +113,11 @@ async function runEffect(e, db) {
   const s = db.runtime.active;
   switch (e.kind) {
     case 'openTask': {
-      if (!s) return false;
-      if (s.type === 'video') {
-        const win = await openStudyWindow(s.url);
-        S.attachStudy(db, win.id, win.tabs?.[0]?.id);
-      } else if (s.url) {
-        const tab = await openInNormalWindow(s.url);
-        S.attachStudy(db, null, tab?.id);
-      }
+      // Only lectures open on start (in the locked study window). Other tasks open their URL
+      // when you press "Open task".
+      if (s?.type !== 'video') return false;
+      const win = await openStudyWindow(s.url);
+      S.attachStudy(db, win.id, win.tabs?.[0]?.id);
       return true;
     }
     case 'openRecall':
@@ -404,7 +402,21 @@ async function navCheck(msg, sender) {
 // ---------------------------------------------------------------------------------------------
 // Messages
 
-const CONTENT_MESSAGES = new Set(['video:hello', 'video:progress', 'nav:check']);
+const CONTENT_MESSAGES = new Set(['video:hello', 'video:progress', 'nav:check', 'seek:import']);
+
+// Tasks picked in the "Add to Zanshin" panel on a Seek course page. Only Seek's own pages may send
+// this. The course prefix you typed is remembered per course for next week's import.
+async function seekImport(msg, sender) {
+  if (!(sender.url || '').startsWith(`${SEEK_ORIGIN}/`)) return { ok: false, error: 'Not allowed.' };
+  const result = await mutate((db, now) => T.importTasks(db, msg.tasks, now, uid));
+  const ns = String(msg.namespace || '').slice(0, 40);
+  if (result.ok && ns && msg.prefix) {
+    const { seekPrefixes = {} } = await chrome.storage.local.get('seekPrefixes');
+    seekPrefixes[ns] = String(msg.prefix).trim().slice(0, 20);
+    await chrome.storage.local.set({ seekPrefixes });
+  }
+  return result;
+}
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   handle(msg, sender).then(sendResponse, (err) => sendResponse({ ok: false, error: String(err?.message || err) }));
@@ -475,6 +487,8 @@ async function handle(msg, sender) {
       return videoProgress(msg, sender);
     case 'nav:check':
       return navCheck(msg, sender);
+    case 'seek:import':
+      return seekImport(msg, sender);
     default:
       return { ok: false, error: `Unknown message: ${type}` };
   }

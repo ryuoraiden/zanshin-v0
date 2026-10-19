@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Seek mock</title>
+    <!-- Dev only: a stand-in Seek course page. Open /courses/ns_26t3_cs2006 on the preview server. -->
+    <script src="/tools/chrome-stub.js"></script>
+    <script src="/content/seek-capture.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 28px;
+        background: #1c1f2a;
+        color: #d6d9e0;
+        font: 14px/1.5 'Segoe UI', system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Sep 2026 - MAD II (mock Seek page)</h2>
+    <p>The outline below is loaded the way Seek loads it, through fetch, so the capture script sees it.</p>
+    <script type="module">
+      // Simulates Seek's own request (the path the real capture script watches for).
+      await fetch('/api/v2/user/course/?namespace=ns_26t3_cs2006').then((r) => r.json());
+      const s = document.createElement('script');
+      s.src = '/content/seek.js';
+      document.body.append(s);
+    </script>
+  </body>
+</html>

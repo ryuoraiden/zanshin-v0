@@ -10,6 +10,23 @@
   window.__zanshinLoaded = true;
 
   const isTop = window === window.top;
+
+  // A YouTube page that loads in a background tab (for example one Zanshin just put back after a
+  // session) doesn't get to play until you've looked at it once. Chrome already holds back
+  // brand-new background tabs, but not a tab that navigates while hidden. Media events don't
+  // bubble, so this listens in the capture phase.
+  let holdUntilSeen = document.visibilityState === 'hidden';
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') holdUntilSeen = false;
+  });
+  document.addEventListener(
+    'play',
+    (e) => {
+      if (holdUntilSeen && e.target instanceof HTMLMediaElement) e.target.pause();
+    },
+    true,
+  );
+
   const REPORT_MS = 5000;
   const REHELLO_MS = 60000; // a safety net; the first hello normally settles it
 
@@ -104,7 +121,7 @@
       lastT = null;
     });
     v.addEventListener('pause', (e) => e.target === video && flush());
-    v.addEventListener('ended', (e) => e.target === video && flush());
+    v.addEventListener('ended', (e) => e.target === video && flush(true));
     v.addEventListener('loadedmetadata', tryResume);
   }
 
@@ -131,11 +148,12 @@
     lastPerf = now;
   }
 
-  function flush() {
+  // `ended` tells the worker the lecture reached its real end, which is what finishes it.
+  function flush(ended = false) {
     if (!target || !video) return;
     const ad = adShowing();
     const dur = ad ? NaN : video.duration;
-    if (!pending.length && playedMs < 1 && durationSent) return;
+    if (!ended && !pending.length && playedMs < 1 && durationSent) return;
     const msg = {
       type: 'video:progress',
       videoId,
@@ -143,6 +161,7 @@
       playedMs: Math.round(playedMs),
       currentTime: ad ? undefined : video.currentTime,
       duration: Number.isFinite(dur) && dur > 0 ? dur : undefined,
+      ended: ended && !ad,
     };
     if (msg.duration) durationSent = true;
     pending = [];

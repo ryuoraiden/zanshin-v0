@@ -35,6 +35,17 @@
       "js": ["content/youtube.js"],
       "all_frames": true,
       "run_at": "document_start"
+    },
+    {
+      "matches": ["https://seek.onlinedegree.iitm.ac.in/*"],
+      "js": ["content/seek-capture.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://seek.onlinedegree.iitm.ac.in/*"],
+      "js": ["content/seek.js"],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
