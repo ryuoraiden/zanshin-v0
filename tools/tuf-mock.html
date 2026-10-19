@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Striver's A2Z DSA Sheet (mock)</title>
+    <!-- Dev only: mirrors the TUF+ sheet structure seen on the live site (sections with
+         button[data-tree-anchor] headers, rows that only render once a section is open). -->
+    <script src="/tools/chrome-stub.js"></script>
+    <style>
+      body { margin: 0; padding: 24px; background: #111318; color: #ddd; font: 14px/1.5 'Segoe UI', system-ui, sans-serif; }
+      section { margin: 4px 0 4px 16px; }
+      button[data-tree-anchor] { background: none; border: 0; color: #ddd; font: inherit; cursor: pointer; padding: 4px 0; }
+      table { margin-left: 16px; }
+      td { padding: 2px 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>Striver's A2Z DSA Sheet</h1>
+    <div id="tree"></div>
+    <script>
+      const sheet = [
+        { name: 'Arrays', subs: [{ name: 'Easy', rows: [['Largest Element', 'largest-element', 'Basic', true], ['Second Largest', 'second-largest', 'Basic', false]] }] },
+        {
+          name: 'Binary Search',
+          subs: [
+            { name: 'Fundamentals', rows: [['Search X in sorted array', 'search-x-in-sorted-array', 'Basic', false], ['Lower Bound ', 'lower-bound-', 'Core', false], ['Upper Bound', 'upper-bound', 'Core', true]] },
+            { name: 'On answers', rows: [['Koko Eating Bananas', 'koko-eating-bananas', 'Core', false]] },
+          ],
+        },
+      ];
+      const count = (s) => s.subs.flatMap((x) => x.rows);
+      function section(name, done, total, build) {
+        const sec = document.createElement('section');
+        const head = document.createElement('button');
+        head.setAttribute('data-tree-anchor', 'true');
+        head.setAttribute('aria-expanded', 'false');
+        head.textContent = `${name} ${done}/${total}`;
+        sec.append(head);
+        head.onclick = () => {
+          const open = head.getAttribute('aria-expanded') === 'true';
+          head.setAttribute('aria-expanded', String(!open));
+          if (open) [...sec.children].slice(1).forEach((c) => c.remove());
+          else setTimeout(() => build(sec), 120); // rows render a moment after the click, like the real page
+        };
+        return sec;
+      }
+      for (const step of sheet) {
+        const rows = count(step);
+        document.getElementById('tree').append(
+          section(step.name, rows.filter((r) => r[3]).length, rows.length, (sec) => {
+            for (const sub of step.subs)
+              sec.append(
+                section(sub.name, sub.rows.filter((r) => r[3]).length, sub.rows.length, (subSec) => {
+                  const table = document.createElement('table');
+                  const tbody = document.createElement('tbody');
+                  sub.rows.forEach(([title, slug, level, solved], i) => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.sheetRowKey = `practice-${slug.length}${i}`;
+                    tr.dataset.rowType = 'practice';
+                    tr.innerHTML = `<td><button aria-label="Mark ${title} complete" data-state="${solved ? 'checked' : 'unchecked'}">○</button> ${title}<span>${level}</span></td><td><a aria-label="Open on takeUforward" href="/practice/dsa/${slug}?from=sheet">open</a></td>`;
+                    tbody.append(tr);
+                  });
+                  table.append(tbody);
+                  subSec.append(table);
+                }),
+              );
+          }),
+        );
+      }
+    </script>
+    <script src="/content/picker.js"></script>
+    <script src="/content/tuf.js"></script>
+  </body>
+</html>

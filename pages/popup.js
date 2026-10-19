@@ -12,6 +12,13 @@ $('dash').addEventListener('click', () => {
   window.close();
 });
 $('opts').addEventListener('click', () => chrome.runtime.openOptionsPage());
+// Reads the tab you're on for problem and lecture links (only on this click) and opens the picker there.
+$('scan').addEventListener('click', async () => {
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (!tab) return;
+  const r = await send('scan:tab', { tabId: tab.id });
+  if (r.ok) window.close();
+});
 
 function renderQuota(now) {
   const q = quotaStatus(db, now);
@@ -73,7 +80,7 @@ function renderNext(now) {
                 'div',
                 { class: 'item-meta' },
                 chip(t.category),
-                h('span', { class: 'badge' }, TYPE_LABEL[t.type]),
+                t.group ? h('span', { class: 'badge' }, t.group) : h('span', { class: 'badge' }, TYPE_LABEL[t.type]),
                 deadlineBadge(t, now),
                 t.estimateMin ? h('span', { class: 'faint small' }, `${t.estimateMin} min`) : null,
               ),

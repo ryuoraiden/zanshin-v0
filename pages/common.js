@@ -19,6 +19,7 @@ export function structureKey(db) {
     db.runtime.rewardUntil,
     db.runtime.rewardUsedDay,
     db.runtime.pending,
+    (db.series || []).map((s) => [s.id, s.title, s.batch, s.paused, s.next]),
     a && [a.id, a.phase, a.exitRequestedAt, a.overrides, a.pauses.length, a.events.length],
   ]);
 }

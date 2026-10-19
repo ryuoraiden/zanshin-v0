@@ -65,6 +65,7 @@ test('items become tasks', () => {
     url: 'https://www.youtube.com/watch?v=3fv1ejKqiUU',
     deadline: DUE_W2,
     hardDeadline: false,
+    group: 'MAD2 Week 2',
     ref: `seek:${NS}:37`,
   });
   const ga = K.itemToTask(byId(53), { prefix: 'MAD2', namespace: NS });

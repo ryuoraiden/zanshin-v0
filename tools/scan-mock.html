@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CP-31 style sheet (mock)</title>
+    <!-- Dev only: a stand-in problem sheet for checking "Add from this page". Open /tools/scan-mock.html. -->
+    <script src="/tools/chrome-stub.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 28px;
+        background: #f4f4f2;
+        color: #222;
+        font: 14px/1.6 'Segoe UI', system-ui, sans-serif;
+      }
+      table {
+        border-collapse: collapse;
+        margin-bottom: 18px;
+      }
+      td {
+        padding: 4px 12px;
+        border-bottom: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CP-31 Sheet (mock)</h1>
+    <h2>Rating 800</h2>
+    <table>
+      <tr><td><a href="https://codeforces.com/problemset/problem/580/A">Kefa and First Steps</a></td><td><a href="https://codeforces.com/problemset/problem/580/A">Solve</a></td></tr>
+      <tr><td><a href="https://codeforces.com/contest/1352/problem/C2">K-th Not Divisible by n</a></td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/4/A">Watermelon</a></td></tr>
+    </table>
+    <h2>Rating 900</h2>
+    <table>
+      <tr><td><a href="https://codeforces.com/problemset/problem/2000/B">Seating in a Bus</a></td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1985/B">Maximum Multiple Sum</a></td></tr>
+    </table>
+    <h2>Extra practice</h2>
+    <p>
+      <a href="https://leetcode.com/problems/two-sum/">Two Sum on LeetCode</a> and an explainer video
+      <a href="https://www.youtube.com/watch?v=3fv1ejKqiUU">here</a>. Also <a href="https://example.com/blog">a blog post</a>.
+    </p>
+    <script src="/content/picker.js"></script>
+    <button id="scan" style="margin-top: 20px">Simulate "Add from this page"</button>
+    <script>
+      document.getElementById('scan').onclick = () => {
+        const s = document.createElement('script');
+        s.src = '/content/scan.js?' + Date.now();
+        document.body.append(s);
+      };
+    </script>
+  </body>
+</html>

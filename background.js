@@ -8,11 +8,12 @@ import * as S from './lib/state.js';
 import * as T from './lib/tasks.js';
 import { cashIn, todayKey } from './lib/db.js';
 import { buildRules, checkUrl, blockedUrl, sweepAction } from './lib/rules.js';
-import { fetchRecent } from './lib/codeforces.js';
+import { fetchRecent, solvedKeys } from './lib/codeforces.js';
 import { proposeSettings } from './lib/settings.js';
 import { isExemptUrl } from './lib/urls.js';
 import { liveCreditMs } from './lib/credit.js';
-import { SEEK_ORIGIN } from './lib/seek.js';
+import { SEEK_ORIGIN } from './lib/links.js';
+import { createSeries, feedSeries, updateSeries, removeSeries } from './lib/series.js';
 
 const EXT_BASE = chrome.runtime.getURL('');
 const BLOCKED = chrome.runtime.getURL('pages/blocked.html');
@@ -36,6 +37,8 @@ function mutate(fn) {
     const db = await loadDb(now);
     const before = db.sessions.length;
     const result = (await fn(db, now)) || { ok: true, effects: [] };
+    // Any change (a finished, deleted or newly imported task) may leave a series below its batch.
+    feedSeries(db, now, uid);
     await saveDb(db, { sessions: db.sessions.length !== before });
     let changed = false;
     for (const effect of result.effects || []) {
@@ -402,20 +405,74 @@ async function navCheck(msg, sender) {
 // ---------------------------------------------------------------------------------------------
 // Messages
 
-const CONTENT_MESSAGES = new Set(['video:hello', 'video:progress', 'nav:check', 'seek:import']);
+const CONTENT_MESSAGES = new Set(['video:hello', 'video:progress', 'nav:check', 'import:tasks', 'cf:solved', 'yt:titles']);
 
-// Tasks picked in the "Add to Zanshin" panel on a Seek course page. Only Seek's own pages may send
-// this. The course prefix you typed is remembered per course for next week's import.
-async function seekImport(msg, sender) {
-  if (!(sender.url || '').startsWith(`${SEEK_ORIGIN}/`)) return { ok: false, error: 'Not allowed.' };
-  const result = await mutate((db, now) => T.importTasks(db, msg.tasks, now, uid));
-  const ns = String(msg.namespace || '').slice(0, 40);
-  if (result.ok && ns && msg.prefix) {
+// Titles for YouTube links that came without one (a link that just says "here"), through
+// YouTube's public oEmbed endpoint. At most 50 per call, 5 seconds each.
+async function youtubeTitles(urls) {
+  const list = (Array.isArray(urls) ? urls : []).filter((u) => typeof u === 'string').slice(0, 50);
+  const titles = {};
+  await Promise.all(
+    list.map(async (url) => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      try {
+        const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
+        if (r.ok) titles[url] = String((await r.json()).title || '').slice(0, 200);
+      } catch {
+      } finally {
+        clearTimeout(timer);
+      }
+    }),
+  );
+  return { ok: true, data: { titles } };
+}
+
+// Tasks picked in an "Add to Zanshin" panel (Seek, TUF+, any page) or pasted in the dashboard.
+// With `series` they become a series that feeds a few at a time; otherwise they're added at once.
+// Nothing is added without you pressing Add in the panel, and duplicates are always skipped.
+async function importFromPicker(msg, sender) {
+  const series = msg.series && typeof msg.series === 'object' ? msg.series : null;
+  const result = await mutate((db, now) =>
+    series ? createSeries(db, { title: series.title, batch: series.batch, items: msg.tasks }, now, uid) : T.importTasks(db, msg.tasks, now, uid),
+  );
+  // Seek remembers the course prefix you typed, per course, for next week's import.
+  const pref = msg.seekPrefix;
+  if (result.ok && pref?.namespace && pref.prefix && (sender.url || '').startsWith(`${SEEK_ORIGIN}/`)) {
     const { seekPrefixes = {} } = await chrome.storage.local.get('seekPrefixes');
-    seekPrefixes[ns] = String(msg.prefix).trim().slice(0, 20);
+    seekPrefixes[String(pref.namespace).slice(0, 40)] = String(pref.prefix).trim().slice(0, 20);
     await chrome.storage.local.set({ seekPrefixes });
   }
   return result;
+}
+
+// "Add from this page" in the popup: drops the picker and the link scanner into that tab. Runs
+// only on that click (activeTab-style); nothing is read from pages you don't ask about.
+async function scanTab(tabId) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!/^https?:/.test(tab.url || '')) return { ok: false, error: "Zanshin can't read this kind of page." };
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['content/picker.js', 'content/scan.js'] });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Couldn't read this page: ${err?.message || err}` };
+  }
+}
+
+// Problems your Codeforces handle has an accepted submission for, cached for 10 minutes.
+let solvedCache = { handle: '', at: 0, keys: [] };
+async function codeforcesSolved() {
+  const { settings } = await loadDb();
+  const handle = settings.cfHandle;
+  if (!handle) return { ok: true, data: { keys: [], handle: '' } };
+  if (solvedCache.handle === handle && Date.now() - solvedCache.at < 600000) return { ok: true, data: { keys: solvedCache.keys, handle } };
+  try {
+    const keys = solvedKeys(await fetchRecent(handle, fetch, 15000, 0));
+    solvedCache = { handle, at: Date.now(), keys };
+    return { ok: true, data: { keys, handle } };
+  } catch (err) {
+    return { ok: false, error: `Couldn't read Codeforces submissions: ${err?.message || err}` };
+  }
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -487,8 +544,18 @@ async function handle(msg, sender) {
       return videoProgress(msg, sender);
     case 'nav:check':
       return navCheck(msg, sender);
-    case 'seek:import':
-      return seekImport(msg, sender);
+    case 'import:tasks':
+      return importFromPicker(msg, sender);
+    case 'cf:solved':
+      return codeforcesSolved();
+    case 'yt:titles':
+      return youtubeTitles(msg.urls);
+    case 'series:update':
+      return mutate((db, now) => updateSeries(db, msg.id, msg.patch || {}, now, uid));
+    case 'series:remove':
+      return mutate((db) => removeSeries(db, msg.id));
+    case 'scan:tab':
+      return scanTab(msg.tabId);
     default:
       return { ok: false, error: `Unknown message: ${type}` };
   }

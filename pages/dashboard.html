@@ -87,6 +87,58 @@
         align-items: flex-start;
         gap: 14px;
       }
+      .queue li.group {
+        padding: 0;
+      }
+      .group-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 2px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .group-head .caret {
+        width: 14px;
+        color: var(--muted);
+        transition: transform 0.15s;
+        flex-shrink: 0;
+      }
+      li.group.collapsed .caret {
+        transform: rotate(-90deg);
+      }
+      .group-head .name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .group-head .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .group-body {
+        list-style: none;
+        margin: 0 0 8px 6px;
+        padding: 0 0 0 14px;
+        border-left: 2px solid var(--border-strong);
+      }
+      li.group.collapsed .group-body {
+        display: none;
+      }
+      .group-body > li {
+        padding: 9px 0;
+        border-top: 1px solid var(--border);
+      }
+      .group-body > li:first-child {
+        border-top: 0;
+      }
+      .series-ctl {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .series-ctl .btn.sm {
+        padding: 2px 8px;
+      }
       .queue li.pinned .item-title::before {
         content: '';
         display: inline-block;
@@ -219,14 +271,51 @@
                 <label class="field check span-3">
                   <input type="checkbox" name="hardDeadline" /> Hard deadline (graded, can't slip)
                 </label>
-                <label class="field span-6">Extra allowed sites for this task
+                <label class="field span-3">Group
+                  <input type="text" name="group" list="group-names" placeholder="MAD2 Week 3, CP-31 1200..." maxlength="80" />
+                </label>
+                <label class="field span-3">Extra allowed sites for this task
                   <input type="text" name="extraDomains" placeholder="cp-algorithms.com, docs.python.org" />
                 </label>
               </div>
+              <datalist id="group-names"></datalist>
               <div class="hint" id="type-hint"></div>
               <div class="row" style="margin-top: 14px">
                 <button class="btn primary" type="submit" id="submit">Add task</button>
                 <button class="btn ghost hidden" type="button" id="cancel-edit">Cancel</button>
+              </div>
+            </form>
+          </section>
+          <section class="card">
+            <h3>Paste links</h3>
+            <form id="paste-form" autocomplete="off">
+              <label class="field">
+                One per line. A title before the link is kept ("POTD | https://codeforces.com/..."), and a bare
+                Codeforces code like 2001C works too.
+                <textarea name="lines" rows="5" spellcheck="false" placeholder="https://codeforces.com/contest/2001/problem/C&#10;Two Sum | https://leetcode.com/problems/two-sum/&#10;https://youtu.be/..."></textarea>
+              </label>
+              <div class="fields" style="margin-top: 12px">
+                <label class="field span-3">Group
+                  <input type="text" name="group" list="group-names" placeholder="no group" maxlength="80" />
+                </label>
+                <label class="field span-3">Category
+                  <select name="category">
+                    <option value="">From the link</option>
+                    <option>IITM</option>
+                    <option>DSA</option>
+                    <option>NITC</option>
+                    <option>Cyber</option>
+                  </select>
+                </label>
+                <label class="field check span-6" style="padding-top: 0">
+                  <input type="checkbox" name="series" /> Feed
+                  <input type="number" name="batch" min="1" max="10" value="3" style="width: 64px" />
+                  at a time as a series (named after the group)
+                </label>
+              </div>
+              <div class="hint" id="paste-hint">Codeforces links become Codeforces tasks that finish themselves on an accepted submission. YouTube links become lectures.</div>
+              <div class="row" style="margin-top: 12px">
+                <button class="btn primary" type="submit" id="paste-submit">Add links</button>
               </div>
             </form>
           </section>
