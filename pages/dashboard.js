@@ -15,6 +15,8 @@ import {
 } from './common.js';
 import { quotaStatus, daySummary, weekSummary } from '../lib/db.js';
 import { orderQueue, upcomingDeadlines } from '../lib/queue.js';
+import { queueBlocks, groupNames } from '../lib/groups.js';
+import { parseLinkLines, classifyLink, linkToTask } from '../lib/links.js';
 import { fmtHM, fmtTime, fmtDate, dayLabel, toLocalInput, TYPE_LABEL, fmtDeadline } from '../lib/format.js';
 import { CATEGORIES } from '../lib/settings.js';
 import { normalizeDomain } from '../lib/urls.js';
@@ -73,6 +75,7 @@ function editTask(t) {
   f.deadline.value = toLocalInput(t.deadline);
   f.hardDeadline.checked = !!t.hardDeadline;
   f.extraDomains.value = (t.extraDomains || []).join(', ');
+  f.group.value = t.group || '';
   $('form-title').textContent = 'Edit task';
   $('submit').textContent = 'Save changes';
   $('cancel-edit').classList.remove('hidden');
@@ -93,11 +96,63 @@ form.addEventListener('submit', async (e) => {
     deadline: f.deadline.value,
     hardDeadline: f.hardDeadline.checked,
     extraDomains: f.extraDomains.value,
+    group: f.group.value,
   };
   const r = editingId ? await send('task:update', { id: editingId, task }) : await send('task:add', { task });
   if (r.ok) {
     toast(editingId ? 'Saved.' : 'Added to the queue.');
     resetForm();
+  }
+});
+
+// ---------------------------------------------------------------------------------------------
+// Paste box: links (one per line) become tasks, or a series. YouTube titles are looked up
+// through YouTube's public oEmbed endpoint; everything else is titled from the link.
+
+const pasteForm = $('paste-form');
+const pf = pasteForm.elements;
+
+async function youtubeTitle(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
+    return r.ok ? (await r.json()).title || '' : '';
+  } catch {
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+pasteForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const lines = parseLinkLines(pf.lines.value);
+  if (!lines.length) return toast('No links found. Paste one link per line.', 'error');
+  const submit = $('paste-submit');
+  submit.disabled = true;
+  submit.textContent = 'Adding…';
+  try {
+    const group = pf.group.value.trim();
+    const tasks = await Promise.all(
+      lines.map(async ({ url, title }) => {
+        const link = classifyLink(url);
+        if (!link) return null;
+        const name = title || (link.kind === 'youtube' ? await youtubeTitle(link.url) : '');
+        return linkToTask(link, { title: name, category: pf.category.value, group });
+      }),
+    );
+    const valid = tasks.filter(Boolean);
+    const series = pf.series.checked ? { title: group || 'Series', batch: Number(pf.batch.value) || 3 } : null;
+    const r = await send('import:tasks', { tasks: valid, series });
+    if (r.ok) {
+      const { added = 0, skipped = 0 } = r.data || {};
+      toast(series ? `Series "${series.title}" made with ${added} tasks.` : `Added ${added}${skipped ? `, ${skipped} were already there` : ''}.`);
+      pf.lines.value = '';
+    }
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'Add links';
   }
 });
 
@@ -159,48 +214,129 @@ function renderSession(now) {
   updateSessionCard(card, db, now);
 }
 
-function renderQueue(now) {
-  const queue = orderQueue(db.tasks, now);
-  const active = db.runtime.active;
-  $('queue-count').textContent = queue.length ? `${queue.length} open` : '';
-  if (!queue.length) {
-    $('queue').replaceChildren(h('li', { class: 'empty' }, 'Nothing queued. Add a task below.'));
-    return;
+// Collapsed groups are a per-browser view preference, so they live in localStorage.
+const COLLAPSED_KEY = 'zanshin-collapsed-groups';
+function collapsedGroups() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]'));
+  } catch {
+    return new Set();
   }
-  $('queue').replaceChildren(
-    ...queue.map((t) =>
+}
+function setCollapsed(name, collapsed) {
+  const set = collapsedGroups();
+  if (collapsed) set.add(name);
+  else set.delete(name);
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set]));
+  } catch {}
+}
+
+function taskRow(t, now, active, inGroup) {
+  return h(
+    'li',
+    { class: t.pinned ? 'pinned' : '' },
+    h(
+      'div',
+      { class: 'row spread' },
       h(
-        'li',
-        { class: t.pinned ? 'pinned' : '' },
+        'div',
+        { style: { minWidth: '0' } },
+        h('div', { class: 'item-title' }, t.title),
         h(
           'div',
-          { class: 'row spread' },
-          h(
-            'div',
-            { style: { minWidth: '0' } },
-            h('div', { class: 'item-title' }, t.title),
-            h(
-              'div',
-              { class: 'item-meta' },
-              chip(t.category),
-              h('span', { class: 'badge' }, TYPE_LABEL[t.type], t.cfProblem ? ` ${t.cfProblem}` : ''),
-              deadlineBadge(t, now),
-              t.estimateMin ? h('span', { class: 'faint small' }, `${t.estimateMin} min`) : null,
-              t.url ? h('a', { href: t.url, target: '_blank', class: 'small faint', title: t.url }, normalizeDomain(t.url)) : null,
-            ),
-          ),
-          h(
-            'div',
-            { class: 'task-actions' },
-            btn('Start', 'primary sm', () => send('session:start', { taskId: t.id }), { disabled: !!active }),
-            btn('Edit', 'ghost sm', () => editTask(t), { disabled: active?.taskId === t.id }),
-            btn(t.pinned ? 'Unpin' : 'Pin', 'ghost sm', () => send('task:pin', { id: t.id })),
-            active?.taskId === t.id ? null : confirmBtn('Delete', 'Sure?', 'ghost sm', () => send('task:delete', { id: t.id })),
-          ),
+          { class: 'item-meta' },
+          inGroup ? null : chip(t.category),
+          h('span', { class: 'badge' }, TYPE_LABEL[t.type], t.cfProblem ? ` ${t.cfProblem}` : ''),
+          deadlineBadge(t, now),
+          t.estimateMin ? h('span', { class: 'faint small' }, `${t.estimateMin} min`) : null,
+          t.url ? h('a', { href: t.url, target: '_blank', class: 'small faint', title: t.url }, normalizeDomain(t.url)) : null,
         ),
+      ),
+      h(
+        'div',
+        { class: 'task-actions' },
+        btn('Start', 'primary sm', () => send('session:start', { taskId: t.id }), { disabled: !!active }),
+        btn('Edit', 'ghost sm', () => editTask(t), { disabled: active?.taskId === t.id }),
+        btn(t.pinned ? 'Unpin' : 'Pin', 'ghost sm', () => send('task:pin', { id: t.id })),
+        active?.taskId === t.id ? null : confirmBtn('Delete', 'Sure?', 'ghost sm', () => send('task:delete', { id: t.id })),
       ),
     ),
   );
+}
+
+function groupRow(block, now, active, collapsed) {
+  const s = block.series;
+  const p = block.progress;
+  const isCollapsed = collapsed.has(block.name);
+  const counts = s
+    ? `${p.done} of ${p.total} done, ${p.left} waiting`
+    : `${block.tasks.length} open${block.done ? `, ${block.done} done` : ''}`;
+  const cats = [...new Set(block.tasks.map((t) => t.category))];
+  const deadline = block.nextDeadline ? deadlineBadge({ deadline: block.nextDeadline, hardDeadline: block.hard }, now) : null;
+  const seriesControls = s
+    ? h(
+        'span',
+        { class: 'series-ctl', onclick: (e) => e.stopPropagation() },
+        h('span', { class: 'small faint' }, `${s.batch} at a time`),
+        btn('−', 'ghost sm', () => send('series:update', { id: s.id, patch: { batch: s.batch - 1 } }), { title: 'Fewer at a time', disabled: s.batch <= 1 }),
+        btn('+', 'ghost sm', () => send('series:update', { id: s.id, patch: { batch: s.batch + 1 } }), { title: 'More at a time', disabled: s.batch >= 10 }),
+        btn(s.paused ? 'Resume' : 'Pause', 'ghost sm', () => send('series:update', { id: s.id, patch: { paused: !s.paused } })),
+        confirmBtn('Stop', 'Stop feeding?', 'ghost sm', () => send('series:remove', { id: s.id })),
+      )
+    : null;
+  const next = block.tasks[0];
+  const head = h(
+    'div',
+    {
+      class: 'group-head',
+      onclick: (e) => {
+        if (e.target.closest('button')) return;
+        const li = e.currentTarget.parentElement;
+        li.classList.toggle('collapsed');
+        setCollapsed(block.name, li.classList.contains('collapsed'));
+      },
+    },
+    h('span', { class: 'caret' }, '▾'),
+    h(
+      'div',
+      { class: 'grow' },
+      h('div', { class: 'name' }, block.name),
+      h(
+        'div',
+        { class: 'item-meta' },
+        cats.map((c) => chip(c)),
+        s ? h('span', { class: `badge ${s.paused ? '' : 'soon'}` }, s.paused ? 'Series, paused' : 'Series') : null,
+        h('span', { class: 'small muted' }, counts),
+        deadline,
+      ),
+      s && p.total ? bar(p.done / p.total, { class: 'bar ok', style: { marginTop: '6px', maxWidth: '260px' } }) : null,
+    ),
+    seriesControls,
+    next ? btn('Start next', 'primary sm', () => send('session:start', { taskId: next.id }), { disabled: !!active, title: next.title }) : null,
+  );
+  return h(
+    'li',
+    { class: `group${isCollapsed ? ' collapsed' : ''}` },
+    head,
+    block.tasks.length
+      ? h('ul', { class: 'group-body' }, block.tasks.map((t) => taskRow(t, now, active, true)))
+      : h('ul', { class: 'group-body' }, h('li', { class: 'empty' }, s?.paused ? 'Paused. Resume to feed the next tasks.' : 'Nothing open right now.')),
+  );
+}
+
+function renderQueue(now) {
+  const blocks = queueBlocks(db, now);
+  const active = db.runtime.active;
+  const open = orderQueue(db.tasks, now).length;
+  $('queue-count').textContent = open ? `${open} open` : '';
+  $('group-names').replaceChildren(...groupNames(db.tasks).map((n) => h('option', { value: n })));
+  if (!blocks.length) {
+    $('queue').replaceChildren(h('li', { class: 'empty' }, 'Nothing queued. Add a task below, paste links, or use Add from this page in the popup.'));
+    return;
+  }
+  const collapsed = collapsedGroups();
+  $('queue').replaceChildren(...blocks.map((b) => (b.kind === 'group' ? groupRow(b, now, active, collapsed) : taskRow(b.task, now, active, false))));
 }
 
 const OUTCOME = { completed: 'Done', abandoned: 'Abandoned', expired: 'Expired' };

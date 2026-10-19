@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mergeIntervals, coverage, dayKey, addIntervals } from '../lib/credit.js';
-import { parseProblem, solvedAfter } from '../lib/codeforces.js';
+import { parseProblem, solvedAfter, solvedKeys } from '../lib/codeforces.js';
 import { normalizeSettings, proposeSettings, applyPending } from '../lib/settings.js';
 import { orderQueue, deadlineStatus } from '../lib/queue.js';
 import { buildTask, updateTask, deleteTask, parseDeadline } from '../lib/tasks.js';
@@ -42,6 +42,7 @@ test('codeforces problem parsing', () => {
   subs.push({ verdict: 'OK', problem: { contestId: 580, index: 'a' }, creationTimeSeconds: 200 });
   assert.equal(solvedAfter(subs, p, 100), true);
   assert.equal(solvedAfter(subs, p, 201), false);
+  assert.deepEqual(solvedKeys(subs).sort(), ['580A', '580B']);
 });
 
 test('settings are clamped and webhooks validated', () => {

@@ -22,9 +22,12 @@
     <script type="module">
       // Simulates Seek's own request (the path the real capture script watches for).
       await fetch('/api/v2/user/course/?namespace=ns_26t3_cs2006').then((r) => r.json());
-      const s = document.createElement('script');
-      s.src = '/content/seek.js';
-      document.body.append(s);
+      for (const src of ['/content/picker.js', '/content/seek.js']) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = false;
+        document.body.append(s);
+      }
     </script>
   </body>
 </html>

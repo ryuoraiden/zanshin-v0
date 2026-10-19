@@ -4,20 +4,22 @@ import { normalizeDb, cashIn, todayKey } from '../lib/db.js';
 import * as S from '../lib/state.js';
 import * as T from '../lib/tasks.js';
 import { proposeSettings } from '../lib/settings.js';
+import { createSeries, feedSeries, updateSeries, removeSeries } from '../lib/series.js';
+
+const uid = () => crypto.randomUUID();
 
 async function mutate(fn) {
   const now = Date.now();
-  const db = normalizeDb(await chrome.storage.local.get(['tasks', 'sessions', 'settings', 'runtime']), now);
+  const db = normalizeDb(await chrome.storage.local.get(['tasks', 'sessions', 'settings', 'runtime', 'series']), now);
   const r = (await fn(db, now)) || { ok: true, effects: [] };
+  feedSeries(db, now, uid);
   for (const e of r.effects || []) {
     if (e.kind === 'openTask' && db.runtime.active) S.attachStudy(db, db.runtime.active.type === 'video' ? 1 : null, 2);
     console.log('[stub effect]', e.kind, e);
   }
-  await chrome.storage.local.set({ tasks: db.tasks, sessions: db.sessions, settings: db.settings, runtime: db.runtime });
+  await chrome.storage.local.set({ tasks: db.tasks, sessions: db.sessions, settings: db.settings, runtime: db.runtime, series: db.series });
   return { ok: r.ok !== false, error: r.error, data: r.data };
 }
-
-const uid = () => crypto.randomUUID();
 
 export async function handle(msg) {
   switch (msg.type) {
@@ -63,13 +65,26 @@ export async function handle(msg) {
         db.settings.setupLocked = true;
         return { ok: true, effects: [] };
       });
-    case 'seek:import': {
-      const r = await mutate((db, now) => T.importTasks(db, msg.tasks, now, uid));
-      const { seekPrefixes = {} } = await chrome.storage.local.get('seekPrefixes');
-      seekPrefixes[msg.namespace] = msg.prefix;
-      await chrome.storage.local.set({ seekPrefixes });
+    case 'import:tasks': {
+      const r = await mutate((db, now) =>
+        msg.series ? createSeries(db, { ...msg.series, items: msg.tasks }, now, uid) : T.importTasks(db, msg.tasks, now, uid),
+      );
+      if (msg.seekPrefix) {
+        const { seekPrefixes = {} } = await chrome.storage.local.get('seekPrefixes');
+        seekPrefixes[msg.seekPrefix.namespace] = msg.seekPrefix.prefix;
+        await chrome.storage.local.set({ seekPrefixes });
+      }
       return r;
     }
+    case 'series:update':
+      return mutate((db, now) => updateSeries(db, msg.id, msg.patch || {}, now, uid));
+    case 'series:remove':
+      return mutate((db) => removeSeries(db, msg.id));
+    case 'yt:titles':
+      return { ok: true, data: { titles: Object.fromEntries((msg.urls || []).map((u) => [u, 'Demo video title (from oEmbed)'])) } };
+    case 'cf:solved':
+      // Pretend the handle has solved 1352C2, so the scan mock shows one pre-unticked problem.
+      return { ok: true, data: { keys: ['1352C2'], handle: 'demo' } };
     default:
       return { ok: true };
   }
