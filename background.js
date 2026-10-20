@@ -14,6 +14,7 @@ import { isExemptUrl } from './lib/urls.js';
 import { liveCreditMs } from './lib/credit.js';
 import { SEEK_ORIGIN } from './lib/links.js';
 import { createSeries, feedSeries, updateSeries, removeSeries } from './lib/series.js';
+import { renameGroup } from './lib/groups.js';
 
 const EXT_BASE = chrome.runtime.getURL('');
 const BLOCKED = chrome.runtime.getURL('pages/blocked.html');
@@ -554,6 +555,8 @@ async function handle(msg, sender) {
       return mutate((db, now) => updateSeries(db, msg.id, msg.patch || {}, now, uid));
     case 'series:remove':
       return mutate((db) => removeSeries(db, msg.id));
+    case 'group:rename':
+      return mutate((db) => renameGroup(db, msg.from, msg.to));
     case 'scan:tab':
       return scanTab(msg.tabId);
     default:

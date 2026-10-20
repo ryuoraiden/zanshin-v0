@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeries, feedSeries, updateSeries, removeSeries, seriesProgress } from '../lib/series.js';
-import { queueBlocks, groupNames } from '../lib/groups.js';
+import { queueBlocks, groupNames, renameGroup } from '../lib/groups.js';
 import { deleteTask, addTask } from '../lib/tasks.js';
 import { startSession, markDone, completeWithNote } from '../lib/state.js';
 import { freshDb, T0, MIN } from './helpers.js';
@@ -103,4 +103,33 @@ test('a paused series with nothing queued still has a block', () => {
   assert.ok(block);
   assert.equal(block.tasks.length, 0);
   assert.equal(block.series.paused, true);
+});
+
+test('renaming a plain group moves its open and done tasks, and can merge or ungroup', () => {
+  const db = freshDb();
+  addTask(db, { title: 'a', group: 'pwn.college' }, T0, 'g1');
+  addTask(db, { title: 'b', group: 'pwn.college' }, T0, 'g2');
+  addTask(db, { title: 'c', group: 'Cyber practice' }, T0, 'g3');
+  db.tasks[1].status = 'done';
+  assert.equal(renameGroup(db, 'pwn.college', 'Intro to Cybersecurity').data.renamed, 2);
+  assert.deepEqual(db.tasks.map((t) => t.group), ['Intro to Cybersecurity', 'Intro to Cybersecurity', 'Cyber practice']);
+  renameGroup(db, 'Cyber practice', 'Intro to Cybersecurity');
+  assert.deepEqual(groupNames(db.tasks), ['Intro to Cybersecurity'], 'merged');
+  renameGroup(db, 'Intro to Cybersecurity', '   ');
+  assert.ok(db.tasks.every((t) => t.group === ''), 'empty name ungroups');
+  assert.equal(renameGroup(db, 'nope', 'x').ok, false);
+});
+
+test('renaming a series group renames the series, and it keeps feeding under the new name', () => {
+  const db = freshDb();
+  const sid = createSeries(db, { title: 'Video 25: Division Algorithm, CS/ECE 3810', batch: 1, items: problems(3) }, T0, id).data.series;
+  assert.equal(renameGroup(db, 'Video 25: Division Algorithm, CS/ECE 3810', 'CO lectures').ok, true);
+  assert.equal(db.series[0].title, 'CO lectures');
+  deleteTask(db, open(db, sid)[0].id);
+  feedSeries(db, T0, id);
+  assert.deepEqual(open(db, sid).map((t) => t.group), ['CO lectures']);
+  assert.ok(queueBlocks(db, T0).find((b) => b.name === 'CO lectures').series);
+  assert.equal(renameGroup(db, 'CO lectures', '').ok, false, 'a series needs a name');
+  createSeries(db, { title: 'Other', items: [{ title: 'z', url: 'https://leetcode.com/problems/z/' }] }, T0, id);
+  assert.equal(renameGroup(db, 'CO lectures', 'Other').ok, false, 'no two series with one name');
 });

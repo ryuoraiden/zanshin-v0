@@ -5,6 +5,7 @@ import * as S from '../lib/state.js';
 import * as T from '../lib/tasks.js';
 import { proposeSettings } from '../lib/settings.js';
 import { createSeries, feedSeries, updateSeries, removeSeries } from '../lib/series.js';
+import { renameGroup } from '../lib/groups.js';
 
 const uid = () => crypto.randomUUID();
 
@@ -80,6 +81,8 @@ export async function handle(msg) {
       return mutate((db, now) => updateSeries(db, msg.id, msg.patch || {}, now, uid));
     case 'series:remove':
       return mutate((db) => removeSeries(db, msg.id));
+    case 'group:rename':
+      return mutate((db) => renameGroup(db, msg.from, msg.to));
     case 'yt:titles':
       return { ok: true, data: { titles: Object.fromEntries((msg.urls || []).map((u) => [u, 'Demo video title (from oEmbed)'])) } };
     case 'cf:solved':
