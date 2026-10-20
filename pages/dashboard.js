@@ -265,6 +265,38 @@ function taskRow(t, now, active, inGroup) {
   );
 }
 
+// Inline rename: the name turns into a text box. Enter saves, Esc cancels. Renames every task in
+// the group (and the series, if it is one); an empty name ungroups a plain group.
+function startRename(nameRow, block) {
+  const input = h('input', { type: 'text', value: block.name, maxlength: '80', class: 'rename-input', 'aria-label': 'Group name' });
+  const cancel = () => form.replaceWith(nameRow);
+  const save = async () => {
+    const to = input.value.replace(/\s+/g, ' ').trim();
+    if (to === block.name) return cancel();
+    const r = await send('group:rename', { from: block.name, to });
+    if (!r.ok) return input.focus();
+    const wasCollapsed = collapsedGroups().has(block.name);
+    setCollapsed(block.name, false);
+    if (wasCollapsed && to) setCollapsed(to, true);
+    toast(to ? `Renamed to "${to}".` : 'Ungrouped.');
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') cancel();
+  });
+  const form = h(
+    'div',
+    { class: 'rename' },
+    input,
+    btn('Save', 'primary sm', save),
+    btn('Cancel', 'ghost sm', cancel),
+    block.series ? null : h('span', { class: 'small faint' }, 'Leave empty to ungroup'),
+  );
+  nameRow.replaceWith(form);
+  input.focus();
+  input.select();
+}
+
 function groupRow(block, now, active, collapsed) {
   const s = block.series;
   const p = block.progress;
@@ -286,12 +318,14 @@ function groupRow(block, now, active, collapsed) {
       )
     : null;
   const next = block.tasks[0];
+  const nameRow = h('div', { class: 'name-row' }, h('span', { class: 'name' }, block.name));
+  nameRow.append(btn('Rename', 'link sm', () => startRename(nameRow, block), { title: 'Rename this group' }));
   const head = h(
     'div',
     {
       class: 'group-head',
       onclick: (e) => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button, input')) return;
         const li = e.currentTarget.parentElement;
         li.classList.toggle('collapsed');
         setCollapsed(block.name, li.classList.contains('collapsed'));
@@ -301,7 +335,7 @@ function groupRow(block, now, active, collapsed) {
     h(
       'div',
       { class: 'grow' },
-      h('div', { class: 'name' }, block.name),
+      nameRow,
       h(
         'div',
         { class: 'item-meta' },
@@ -519,7 +553,8 @@ setInterval(() => {
   if (fb && q.quotaMs) fb.style.width = `${Math.min(100, Math.round((q.doneMs / q.quotaMs) * 100))}%`;
 }, 1000);
 // Deadline labels and the reward state drift with time, so do a full redraw now and then.
-setInterval(() => db && render(), 60000);
+// (skipped while you're typing a new group name, so the redraw doesn't throw it away)
+setInterval(() => db && !document.querySelector('.rename-input') && render(), 60000);
 
 onDbChange(refresh);
 syncFormType();

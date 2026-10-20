@@ -115,6 +115,32 @@
         flex: 1;
         min-width: 0;
       }
+      .name-row {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .name-row .btn.link {
+        font-size: 12px;
+        padding: 0;
+        opacity: 0.45;
+        transition: opacity 0.12s;
+      }
+      .group-head:hover .name-row .btn.link,
+      .name-row .btn.link:focus-visible {
+        opacity: 1;
+      }
+      .rename {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .rename input {
+        max-width: 340px;
+        padding: 5px 8px;
+        font-size: 14px;
+      }
       .group-body {
         list-style: none;
         margin: 0 0 8px 6px;
