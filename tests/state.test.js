@@ -14,13 +14,15 @@ function started(input = {}, settings = {}) {
   return { db, task, s: db.runtime.active };
 }
 
-test('only lectures open something on start', () => {
+test('a task with a link opens on start, one without does not', () => {
   const manual = freshDb();
   const m = withTask(manual, { url: 'https://codeforces.com/problemset' });
-  assert.deepEqual(S.startSession(manual, m.id, T0, 's').effects, []);
+  assert.deepEqual(S.startSession(manual, m.id, T0, 's').effects, [{ kind: 'openTask' }]);
   const lecture = freshDb();
   const v = withTask(lecture, { type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
   assert.deepEqual(S.startSession(lecture, v.id, T0, 's').effects, [{ kind: 'openTask' }]);
+  const bare = freshDb();
+  assert.deepEqual(S.startSession(bare, withTask(bare, {}).id, T0, 's').effects, []);
 });
 
 test('start refuses a second session', () => {
@@ -41,7 +43,6 @@ test('manual: done -> recall -> note completes and returns to idle', () => {
   const r1 = S.markDone(db, T0 + 10 * MIN);
   assert.deepEqual(r1.effects, [{ kind: 'openRecall' }]);
   assert.equal(db.runtime.active.phase, 'recall');
-  assert.equal(S.completeWithNote(db, 'short', T0 + 11 * MIN).ok, false, 'note too short');
   const r2 = S.completeWithNote(db, 'binary search on the answer', T0 + 12 * MIN);
   assert.equal(r2.ok, true);
   assert.equal(db.runtime.active, null);
@@ -50,6 +51,55 @@ test('manual: done -> recall -> note completes and returns to idle', () => {
   assert.equal(rec.outcome, 'completed');
   assert.equal(rec.creditedMs, 12 * MIN);
   assert.ok(r2.effects.some((e) => e.kind === 'discord' && e.text.startsWith('Done:')));
+});
+
+test('a note can be empty or as short as you like', () => {
+  for (const note of ['', '   ', 'ok']) {
+    const { db, task } = started();
+    S.markDone(db, T0 + MIN);
+    assert.equal(S.completeWithNote(db, note, T0 + MIN).ok, true);
+    assert.equal(db.runtime.active, null);
+    assert.equal(db.tasks.find((t) => t.id === task.id).status, 'done');
+    assert.equal(db.sessions.at(-1).note, note.trim());
+  }
+});
+
+test('with notes off, Done finishes the task straight away', () => {
+  const { db, task } = started({}, { recallNotes: false });
+  const r = S.markDone(db, T0 + 10 * MIN);
+  assert.equal(db.runtime.active, null);
+  assert.ok(r.effects.every((e) => e.kind !== 'openRecall'));
+  assert.ok(r.effects.some((e) => e.kind === 'sessionEnded'));
+  assert.equal(db.tasks.find((t) => t.id === task.id).status, 'done');
+  assert.equal(db.sessions.at(-1).outcome, 'completed');
+  assert.equal(db.sessions.at(-1).creditedMs, 10 * MIN);
+});
+
+test('with notes off, a lecture finishes at the end of the video', () => {
+  const { db } = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' }, { recallNotes: false });
+  S.videoProgress(db, { videoId: 'abcdefghijk', duration: 100, intervals: [[0, 95]], currentTime: 95, playedMs: 95000 }, T0);
+  assert.ok(db.runtime.active, 'still playing the end of it');
+  const r = S.videoProgress(db, { videoId: 'abcdefghijk', duration: 100, intervals: [[95, 100]], currentTime: 100, ended: true, playedMs: 5000 }, T0);
+  assert.equal(db.runtime.active, null);
+  assert.ok(r.effects.some((e) => e.kind === 'sessionEnded'), 'closes the study window');
+  assert.equal(db.sessions.at(-1).creditedMs, 100000);
+});
+
+test('with notes off, a fresh AC finishes a Codeforces task', () => {
+  const { db } = started({ type: 'codeforces', cfProblem: '580A' }, { recallNotes: false });
+  const accepted = [{ verdict: 'OK', problem: { contestId: 580, index: 'A' }, creationTimeSeconds: Math.floor(T0 / 1000) + 60 }];
+  const r = S.cfCheck(db, accepted, T0 + 2 * MIN);
+  assert.equal(db.runtime.active, null);
+  assert.ok(r.effects.some((e) => e.kind === 'notify' && e.message.includes('is done')));
+  assert.ok(db.sessions.at(-1).events.some((e) => e.kind === 'accepted'));
+});
+
+test('a session waiting on the note page finishes if notes get turned off', () => {
+  const { db } = started();
+  S.markDone(db, T0 + MIN);
+  db.settings.recallNotes = false;
+  S.markDone(db, T0 + 2 * MIN);
+  assert.equal(db.runtime.active, null);
 });
 
 test('pause stops credit, resume restarts it', () => {
@@ -143,7 +193,6 @@ test('video: 90% played does not cut the lecture off; the end of the video finis
   const r = S.videoProgress(db, { videoId: 'abcdefghijk', duration: 600, intervals: [[540, 600]], currentTime: 600, ended: true, playedMs: 30000 }, T0);
   assert.deepEqual(r.effects, [{ kind: 'openRecall' }]);
   assert.equal(s.phase, 'recall');
-  assert.equal(S.completeWithNote(db, 'too short', T0 + MIN).ok, false);
   assert.equal(S.completeWithNote(db, long, T0 + MIN).ok, true);
   assert.equal(db.sessions.at(-1).coverage, 1);
   assert.equal(db.sessions.at(-1).manual, false);

@@ -138,7 +138,7 @@ export function sessionCard(db) {
 
   const actions = h('div', { class: 'actions' });
   if (s.phase === 'recall') {
-    actions.append(btn('Write the note', 'primary', () => send('session:done')));
+    actions.append(btn('Finish', 'primary', () => send('session:done')));
   } else {
     if (s.type === 'video' || s.url)
       actions.append(btn(s.type === 'video' ? 'Back to lecture' : 'Open task', 'ghost', () => send('session:focus')));
@@ -195,7 +195,7 @@ export function updateSessionCard(card, db, now) {
   if (s.phase === 'paused') {
     const p = s.pauses[s.pauses.length - 1];
     status = `Paused for ${fmtClock(now - (p?.start || now))}. Blocking stays on.`;
-  } else if (s.phase === 'recall') status = 'Write your recall note to finish.';
+  } else if (s.phase === 'recall') status = 'Add a note or leave it empty to finish.';
   else if (s.type === 'video') status = s.studyFocused ? 'Credit counts while the lecture plays.' : 'Lecture window not focused, credit is paused.';
   else if (s.type === 'codeforces') status = `Waiting for an accepted ${s.cfProblem}. Checked every minute.`;
   set('status', status);

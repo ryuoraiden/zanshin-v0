@@ -117,11 +117,16 @@ async function runEffect(e, db) {
   const s = db.runtime.active;
   switch (e.kind) {
     case 'openTask': {
-      // Only lectures open on start (in the locked study window). Other tasks open their URL
-      // when you press "Open task".
-      if (s?.type !== 'video') return false;
-      const win = await openStudyWindow(s.url);
-      S.attachStudy(db, win.id, win.tabs?.[0]?.id);
+      // Lectures open in the locked fullscreen study window. Other tasks open their link in a
+      // normal tab, with no lock; "Open task" brings it back if it gets closed.
+      if (!s?.url) return false;
+      if (s.type === 'video') {
+        const win = await openStudyWindow(s.url);
+        S.attachStudy(db, win.id, win.tabs?.[0]?.id);
+      } else {
+        const tab = await openInNormalWindow(s.url);
+        S.attachStudy(db, null, tab?.id);
+      }
       return true;
     }
     case 'openRecall':
@@ -133,7 +138,7 @@ async function runEffect(e, db) {
       if (e.session.type === 'video' && e.windowId != null) {
         await chrome.windows.remove(e.windowId).catch(() => {});
         await openDashboard();
-      }
+      } else if (e.session.outcome === 'completed' && e.tabId != null) await closeTaskTab(e.tabId);
       return false;
     case 'discord':
       await postDiscord(db.settings.discordWebhook, e.text);
@@ -149,6 +154,18 @@ async function runEffect(e, db) {
       return false;
   }
   return false;
+}
+
+// A finished task's tab (the one Zanshin opened for its link) closes itself. Abandoned sessions
+// leave it open. If it's the last tab in its window it becomes the dashboard instead, so finishing
+// a task never closes Chrome. Zanshin's own pages (other than the blocked page) are left alone.
+async function closeTaskTab(tabId) {
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  const url = tab?.url || '';
+  if (!tab || (url.startsWith(EXT_BASE) && !url.startsWith(BLOCKED))) return;
+  const siblings = await chrome.tabs.query({ windowId: tab.windowId });
+  if (siblings.length > 1) await chrome.tabs.remove(tabId).catch(() => {});
+  else await chrome.tabs.update(tabId, { url: pageUrl('dashboard.html') }).catch(() => {});
 }
 
 async function openStudyWindow(url) {

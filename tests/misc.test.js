@@ -53,6 +53,14 @@ test('settings are clamped and webhooks validated', () => {
   assert.equal(normalizeSettings({ discordWebhook: 'https://discord.com/api/webhooks/1/abc' }).discordWebhook, 'https://discord.com/api/webhooks/1/abc');
 });
 
+test('notes stay on for existing installs, and turning them off applies right away', () => {
+  assert.equal(normalizeSettings({}).recallNotes, true);
+  const locked = normalizeSettings({ setupLocked: true });
+  const r = proposeSettings(locked, { recallNotes: false }, { today: '2026-11-06' });
+  assert.equal(r.settings.recallNotes, false);
+  assert.equal(r.pending, null);
+});
+
 test('setup mode applies everything immediately', () => {
   const cur = normalizeSettings({});
   const r = proposeSettings(cur, { quotaMin: 1, rewardMin: 1 }, { today: '2026-10-17' });

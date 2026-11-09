@@ -20,6 +20,7 @@ function fillForm(db) {
   for (const c of CATEGORIES) f[`cat-${c}`].value = lines(s.categoryDomains[c]);
   f.alwaysAllowed.value = lines(s.alwaysAllowed);
   f.pauseOnBlur.checked = s.pauseOnBlur;
+  f.recallNotes.checked = s.recallNotes;
   f.hardCapMin.value = s.hardCapMin;
   f.cfHandle.value = s.cfHandle;
   f.discordWebhook.value = s.discordWebhook;
@@ -77,6 +78,7 @@ form.addEventListener('submit', async (e) => {
     categoryDomains,
     alwaysAllowed: f.alwaysAllowed.value.split('\n'),
     pauseOnBlur: f.pauseOnBlur.checked,
+    recallNotes: f.recallNotes.checked,
     hardCapMin: f.hardCapMin.value,
     cfHandle: f.cfHandle.value,
     discordWebhook: f.discordWebhook.value,

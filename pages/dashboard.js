@@ -35,10 +35,10 @@ const form = $('task-form');
 const f = form.elements;
 const HINTS = {
   video:
-    'Opens in a locked fullscreen window. Completes once 90% of the video has actually played (skipping ahead does not count), then asks for a 150-character recall note.',
+    'Opens in a locked fullscreen window. Finishes at the end of the video, once 90% of it has actually played (skipping ahead does not count).',
   codeforces:
     'Completes when Codeforces shows an accepted submission for this problem made after you press Start. Needs your handle in Options.',
-  manual: 'You press Done and write one line about what you finished.',
+  manual: 'You press Done when you finish.',
 };
 
 function syncFormType() {
