@@ -117,11 +117,16 @@ async function runEffect(e, db) {
   const s = db.runtime.active;
   switch (e.kind) {
     case 'openTask': {
-      // Only lectures open on start (in the locked study window). Other tasks open their URL
-      // when you press "Open task".
-      if (s?.type !== 'video') return false;
-      const win = await openStudyWindow(s.url);
-      S.attachStudy(db, win.id, win.tabs?.[0]?.id);
+      // Lectures open in the locked fullscreen study window. Other tasks open their link in a
+      // normal tab, with no lock; "Open task" brings it back if it gets closed.
+      if (!s?.url) return false;
+      if (s.type === 'video') {
+        const win = await openStudyWindow(s.url);
+        S.attachStudy(db, win.id, win.tabs?.[0]?.id);
+      } else {
+        const tab = await openInNormalWindow(s.url);
+        S.attachStudy(db, null, tab?.id);
+      }
       return true;
     }
     case 'openRecall':

@@ -14,13 +14,15 @@ function started(input = {}, settings = {}) {
   return { db, task, s: db.runtime.active };
 }
 
-test('only lectures open something on start', () => {
+test('a task with a link opens on start, one without does not', () => {
   const manual = freshDb();
   const m = withTask(manual, { url: 'https://codeforces.com/problemset' });
-  assert.deepEqual(S.startSession(manual, m.id, T0, 's').effects, []);
+  assert.deepEqual(S.startSession(manual, m.id, T0, 's').effects, [{ kind: 'openTask' }]);
   const lecture = freshDb();
   const v = withTask(lecture, { type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' });
   assert.deepEqual(S.startSession(lecture, v.id, T0, 's').effects, [{ kind: 'openTask' }]);
+  const bare = freshDb();
+  assert.deepEqual(S.startSession(bare, withTask(bare, {}).id, T0, 's').effects, []);
 });
 
 test('start refuses a second session', () => {
