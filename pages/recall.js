@@ -1,5 +1,4 @@
 import { readDb, onDbChange, send, h, btn, chip } from './common.js';
-import { NOTE_MIN } from '../lib/state.js';
 import { orderQueue } from '../lib/queue.js';
 import { fmtHM, TYPE_LABEL } from '../lib/format.js';
 
@@ -22,20 +21,11 @@ async function closeTab() {
 }
 
 function formView(s) {
-  const min = NOTE_MIN[s.type] ?? 20;
   const draftKey = `zanshin-draft:${s.id}`;
   const p = PROMPTS[s.type] || PROMPTS.manual;
   const area = h('textarea', { placeholder: p.ph, maxlength: '4000' });
   area.value = sessionStorage.getItem(draftKey) || '';
-  const count = h('span', { class: 'count small' });
-  const save = btn('Save and finish', 'primary', submit);
-  function sync() {
-    const n = area.value.trim().length;
-    count.textContent = `${n} / ${min}`;
-    count.classList.toggle('short', n < min);
-    save.disabled = n < min;
-    sessionStorage.setItem(draftKey, area.value);
-  }
+  const save = btn('Finish', 'primary', submit);
   async function submit() {
     if (save.disabled) return;
     save.disabled = true;
@@ -44,13 +34,12 @@ function formView(s) {
       sessionStorage.removeItem(draftKey);
       finished = r.data?.session || null;
       show('done');
-    } else sync();
+    } else save.disabled = false;
   }
-  area.addEventListener('input', sync);
+  area.addEventListener('input', () => sessionStorage.setItem(draftKey, area.value));
   area.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit();
   });
-  sync();
   setTimeout(() => area.focus(), 50);
   return [
     h('img', { class: 'mark', src: '../icons/brand.png', alt: '残心' }),
@@ -58,7 +47,7 @@ function formView(s) {
     h('h1', {}, s.title),
     h('div', { class: 'prompt' }, p.q),
     area,
-    h('div', { class: 'row spread foot' }, count, h('div', { class: 'row' }, h('span', { class: 'faint small' }, 'Ctrl+Enter'), save)),
+    h('div', { class: 'row spread foot' }, h('span', { class: 'faint small' }, 'Optional. Leave it empty to skip.'), h('div', { class: 'row' }, h('span', { class: 'faint small' }, 'Ctrl+Enter'), save)),
   ];
 }
 

@@ -1,7 +1,7 @@
 # Zanshin 残心
 
 A Chrome extension that holds you on one task until it's actually done. Finishing the task unlocks the next one. A timer running out doesn't.
-In karate, zanshin is the awareness you keep after the technique lands. Here that is the last step of every session: a short written recall before the task counts as done.
+In karate, zanshin is the awareness you keep after the technique lands. Here that is the optional last step of a session: a short note on what you just did.
 
 v0: an agent-built tool, not the hand-written v1. See [PLAN.md](PLAN.md) for the full spec and roadmap.
 
@@ -19,11 +19,12 @@ After editing any file, hit the reload arrow on the Zanshin card in `chrome://ex
 
 | Task type       | Completes when                                                                                                     | Credit counts                                         |
 | --------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Lecture (video) | At least 90% has actually played (skipping ahead and ads don't count) and the video reaches its end, or you press Done after 90%. Then a 150-char recall note | Real seconds while it plays and its window is focused |
-| Codeforces      | An accepted submission for that problem, made after you pressed Start (checked every minute), then a one-line note | Wall time minus pauses                                |
-| Manual          | You press Done and write what you finished                                                                         | Wall time minus pauses                                |
+| Lecture (video) | At least 90% has actually played (skipping ahead and ads don't count) and the video reaches its end, or you press Done after 90% | Real seconds while it plays and its window is focused |
+| Codeforces      | An accepted submission for that problem, made after you pressed Start (checked every minute) | Wall time minus pauses                                |
+| Manual          | You press Done                                                                                                     | Wall time minus pauses                                |
 
 - **During any session** every site outside the task's allowlist goes to a blocked page. "Allow for this session" unlocks after 10 s and is logged. Tabs already open on blocked sites get swept too, except tabs playing audio. When the session ends they go back to their sites on their own; YouTube tabs come back paused.
+- **Notes** are optional. When a task finishes, a note page asks what you'd take away from it; leave it empty and press Finish to skip. To drop that page entirely, untick **Offer a note after each task** in Options, and tasks finish the moment they're done.
 - **Lectures** open in a fullscreen popup window with no tabs and no address bar. YouTube is stripped down to the player. F11 gets undone, new tabs get closed, focus bounces back, and the video pauses when you Alt+Tab. Other task types don't open anything on Start; press **Open task** when you want the link.
 - **Reward sites** (Netflix, Instagram, Reddit, X, Shorts...) stay blocked until you've done your daily quota of focused minutes. Then you can cash in one reward window per day. The day runs 04:00 to 04:00.
 - <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens the dashboard from anywhere, including a locked lecture.
@@ -92,7 +93,7 @@ Do these in setup mode, before locking settings.
 4. Start a session, open `chrome://serviceworker-internals`, find Zanshin and press **Stop**. Timer and blocking are still right afterwards.
 5. Start a session, quit Chrome completely, reopen it. The session and its blocking come back.
 6. Add a lecture task with a short YouTube video. Start it. Drag the slider to the end: it does **not** complete.
-7. Same video, play it at 2x from the start: past 90% it keeps playing, and the recall note appears in the same window when the video ends. Saving it closes the window.
+7. Same video, play it at 2x from the start: past 90% it keeps playing, and the note page appears in the same window when the video ends. Finishing it closes the window.
 8. During a lecture: F11 comes back to fullscreen. Ctrl+T gets closed. Alt+Tab to another app pauses the video. <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> opens the dashboard.
 9. Codeforces task on a problem you already solved: no instant completion. A fresh AC completes within about a minute.
 10. Options: quota 1 min, reward 1 min, save. netflix.com is blocked. Do a 1-minute session, cash in, netflix.com opens, then blocks again a minute later. Set the real numbers (300 and 90) and press **Lock settings**.
