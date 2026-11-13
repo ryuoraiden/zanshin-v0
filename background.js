@@ -367,6 +367,22 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   if (tab && !isExemptUrl(tab.url || tab.pendingUrl, EXT_BASE)) scheduleBounce();
 });
 
+// Closing the tab Zanshin opened for a task finishes the task (a Codeforces task gets an
+// immediate check for its accepted submission instead). Closing a whole window or quitting Chrome
+// does not count: that would finish tasks you never meant to finish.
+chrome.tabs.onRemoved.addListener(async (tabId, info) => {
+  if (info.isWindowClosing) return;
+  const s = (await loadDb()).runtime.active;
+  if (!s || s.type === 'video' || s.tabId !== tabId) return;
+  const r = await mutate((db, now) => S.taskTabClosed(db, tabId, now));
+  if (r.data?.checkCodeforces) wake();
+});
+
+chrome.tabs.onReplaced.addListener(async (addedTabId, removedTabId) => {
+  const s = (await loadDb()).runtime.active;
+  if (s && s.tabId === removedTabId) mutate((db) => S.replaceStudyTab(db, removedTabId, addedTabId));
+});
+
 // Opening chrome://extensions mid-session is logged, never blocked: blocking it would turn a bug
 // into a trap.
 chrome.tabs.onUpdated.addListener(async (tabId, info) => {
