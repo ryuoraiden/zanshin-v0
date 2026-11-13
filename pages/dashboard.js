@@ -38,7 +38,7 @@ const HINTS = {
     'Opens in a locked fullscreen window. Finishes at the end of the video, once 90% of it has actually played (skipping ahead does not count).',
   codeforces:
     'Completes when Codeforces shows an accepted submission for this problem made after you press Start. Needs your handle in Options.',
-  manual: 'You press Done when you finish.',
+  manual: 'You press Done when you finish. If the task has a link, closing its tab also finishes it.',
 };
 
 function syncFormType() {

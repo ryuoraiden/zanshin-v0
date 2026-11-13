@@ -102,6 +102,84 @@ test('a session waiting on the note page finishes if notes get turned off', () =
   assert.equal(db.runtime.active, null);
 });
 
+// A started task whose link Zanshin opened in tab 7.
+function withTab(input = {}, settings = {}) {
+  const ctx = started({ url: 'https://leetcode.com/problems/two-sum', ...input }, settings);
+  S.attachStudy(ctx.db, null, 7);
+  return ctx;
+}
+
+test('closing the task tab finishes a manual task', () => {
+  const { db, task } = withTab({}, { recallNotes: false });
+  const r = S.taskTabClosed(db, 7, T0 + 10 * MIN);
+  assert.equal(db.runtime.active, null);
+  assert.equal(db.tasks.find((t) => t.id === task.id).status, 'done');
+  const rec = db.sessions.at(-1);
+  assert.equal(rec.outcome, 'completed');
+  assert.equal(rec.creditedMs, 10 * MIN);
+  assert.equal(rec.manual, false);
+  assert.ok(rec.events.some((e) => e.kind === 'tab-closed'));
+  assert.equal(r.effects.find((e) => e.kind === 'sessionEnded').tabId, null, 'no tab left to close');
+  assert.ok(r.effects.some((e) => e.kind === 'notify' && e.message.includes('closed its tab')));
+});
+
+test('closing the task tab while paused finishes with the credit earned so far', () => {
+  const { db } = withTab({}, { recallNotes: false });
+  S.pause(db, T0 + 5 * MIN);
+  S.taskTabClosed(db, 7, T0 + 20 * MIN);
+  assert.equal(db.runtime.active, null);
+  assert.equal(db.sessions.at(-1).creditedMs, 5 * MIN);
+});
+
+test('closing the task tab with notes on goes to the note page', () => {
+  const { db } = withTab();
+  const r = S.taskTabClosed(db, 7, T0 + MIN);
+  assert.equal(db.runtime.active.phase, 'recall');
+  assert.deepEqual(r.effects, [{ kind: 'openRecall' }]);
+});
+
+test('closing another tab, or the task tab during the note, changes nothing', () => {
+  const { db } = withTab();
+  assert.deepEqual(S.taskTabClosed(db, 8, T0 + MIN).effects, []);
+  assert.equal(db.runtime.active.phase, 'active');
+  assert.equal(db.runtime.active.tabId, 7);
+  S.markDone(db, T0 + MIN);
+  assert.deepEqual(S.taskTabClosed(db, 7, T0 + 2 * MIN).effects, []);
+  assert.equal(db.runtime.active.phase, 'recall');
+  assert.equal(db.runtime.active.tabId, null);
+});
+
+test('closing a Codeforces tab asks for a submission check and does not finish by hand', () => {
+  const { db } = withTab(
+    { type: 'codeforces', cfProblem: '580A', url: 'https://codeforces.com/problemset/problem/580/A' },
+    { recallNotes: false },
+  );
+  const r = S.taskTabClosed(db, 7, T0 + MIN);
+  assert.equal(r.data.checkCodeforces, true);
+  assert.deepEqual(r.effects, []);
+  assert.equal(db.runtime.active.phase, 'active');
+  assert.equal(db.runtime.active.manual, false);
+  assert.equal(db.runtime.active.tabId, null);
+});
+
+test('a lecture is never finished by its tab closing', () => {
+  const { db } = started({ type: 'video', category: 'IITM', url: 'https://youtu.be/abcdefghijk' }, { recallNotes: false });
+  S.attachStudy(db, 3, 7);
+  assert.deepEqual(S.taskTabClosed(db, 7, T0 + MIN).effects, []);
+  assert.equal(db.runtime.active.phase, 'active');
+  assert.equal(db.runtime.active.tabId, 7);
+});
+
+test('a tab Chrome swapped for a new one is still the task tab', () => {
+  const { db } = withTab({}, { recallNotes: false });
+  S.replaceStudyTab(db, 1, 2);
+  assert.equal(db.runtime.active.tabId, 7);
+  S.replaceStudyTab(db, 7, 9);
+  assert.equal(db.runtime.active.tabId, 9);
+  S.taskTabClosed(db, 9, T0 + MIN);
+  assert.equal(db.runtime.active, null);
+});
+
 test('pause stops credit, resume restarts it', () => {
   const { db } = started();
   S.pause(db, T0 + 10 * MIN);
